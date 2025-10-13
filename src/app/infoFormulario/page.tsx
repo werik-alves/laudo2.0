@@ -29,7 +29,6 @@ export default function InfoFormularioPage() {
   const [tombo, setTombo] = useState("");
   const [modelo, setModelo] = useState("");
   const [setor, setSetor] = useState("");
-  const [observacaoEnvio, setObservacaoEnvio] = useState("");
   const [testesRealizados, setTestesRealizados] = useState("");
   const [diagnostico, setDiagnostico] = useState("");
   // Tipar corretamente os estados (sem any)
@@ -51,6 +50,8 @@ export default function InfoFormularioPage() {
 
   const [dataAtual, setDataAtual] = useState<string>("");
   const [fullName, setFullName] = useState<string>("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("");
 
   useEffect(() => {
     const fullName = localStorage.getItem("fullName") || "";
@@ -71,6 +72,21 @@ export default function InfoFormularioPage() {
   function onlyDigits(value: string) {
     return value.replace(/\D/g, "");
   }
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setImageFile(file);
+    setImagePreviewUrl((prevUrl) => {
+      if (prevUrl) URL.revokeObjectURL(prevUrl);
+      return file ? URL.createObjectURL(file) : "";
+    });
+  };
+
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    };
+  }, [imagePreviewUrl]);
 
   return (
     <Card className="max-w-4xl mx-auto my-6">
@@ -157,16 +173,21 @@ export default function InfoFormularioPage() {
         </div>
 
         <div className="grid gap-2">
-          <Label htmlFor="observacaoEnvio">
-            Observação sobre o envio do equipamento
-          </Label>
-          <textarea
-            id="observacaoEnvio"
-            value={observacaoEnvio}
-            onChange={(e) => setObservacaoEnvio(e.target.value)}
-            className="min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm"
-            placeholder="Descreva observações relevantes"
+          <Label htmlFor="imagemEquipamento">Imagem do Equipamento</Label>
+          <input
+            id="imagemEquipamento"
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            className="border rounded px-3 py-2"
           />
+          {imagePreviewUrl && (
+            <img
+              src={imagePreviewUrl}
+              alt="Prévia da imagem do equipamento"
+              className="mt-2 max-h-48 object-contain rounded border"
+            />
+          )}
         </div>
 
         <div className="grid gap-2">
