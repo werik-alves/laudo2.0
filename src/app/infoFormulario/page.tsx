@@ -50,11 +50,15 @@ export default function InfoFormularioPage() {
   };
 
   const [dataAtual, setDataAtual] = useState<string>("");
+  const [fullName, setFullName] = useState<string>("");
 
   useEffect(() => {
     const fullName = localStorage.getItem("fullName") || "";
     const tokens = fullName.trim().split(/\s+/);
     const firstTwo = tokens.slice(0, 2).join(" ");
+    const storedFullName =
+      (typeof window !== "undefined" && localStorage.getItem("fullName")) || "";
+    setFullName(storedFullName);
     setNomeTecnico(firstTwo || fullName);
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -91,12 +95,7 @@ export default function InfoFormularioPage() {
 
           <div className="grid gap-2">
             <Label htmlFor="nomeTecnico">Nome do Técnico</Label>
-            <Input
-              id="nomeTecnico"
-              value={nomeTecnico}
-              onChange={(e) => setNomeTecnico(e.target.value)}
-              placeholder="Primeiro e segundo nome"
-            />
+            <Input id="nomeTecnico" value={fullName} readOnly />
           </div>
 
           <div className="grid gap-2">
