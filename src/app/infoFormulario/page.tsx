@@ -91,8 +91,8 @@ export default function InfoFormularioPage() {
   return (
     <Card className="max-w-4xl mx-auto my-6">
       <CardHeader>
-        <CardTitle>Informações do Formulário</CardTitle>
-        <CardDescription>Preencha os dados do atendimento</CardDescription>
+        <CardTitle>Informações do Laudo Técnico</CardTitle>
+        <CardDescription>Preencha os dados</CardDescription>
       </CardHeader>
 
       <CardContent className="grid gap-4">
