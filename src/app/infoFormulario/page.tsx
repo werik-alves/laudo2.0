@@ -52,7 +52,7 @@ export default function InfoFormularioPage() {
   const [fullName, setFullName] = useState<string>("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("");
-  const sigPadRef = useRef<any>(null);
+  const sigPadRef = useRef<SignatureCanvas>(null);
   const [assinaturaDataUrl, setAssinaturaDataUrl] = useState<string>("");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isDrawingRef = useRef<boolean>(false);
@@ -94,16 +94,23 @@ export default function InfoFormularioPage() {
   }, [imagePreviewUrl]);
 
   const saveSignature = () => {
-    const pad = sigPadRef.current;
-    if (pad && !pad.isEmpty()) {
-      const dataUrl = pad.getTrimmedCanvas().toDataURL("image/png");
+    if (sigPadRef.current && !sigPadRef.current.isEmpty()) {
+      // capturar assinatura como imagem base64
+      const dataUrl = sigPadRef.current.getCanvas().toDataURL("image/png");
       setAssinaturaDataUrl(dataUrl);
+    } else {
+      alert("Assine antes de salvar!");
     }
   };
 
   const clearSignature = () => {
     const pad = sigPadRef.current;
     if (pad) pad.clear();
+  };
+
+  const limpaImagemEquipamento = () => {
+    setImageFile(null);
+    setImagePreviewUrl("");
   };
 
   return (
@@ -206,6 +213,13 @@ export default function InfoFormularioPage() {
               className="mt-2 max-h-48 object-contain rounded border"
             />
           )}
+          <Button
+            type="button"
+            onClick={limpaImagemEquipamento}
+            className="mt-2 border rounded max-h-10 w-36"
+          >
+            Limpar Imagem
+          </Button>
         </div>
 
         <div className="grid gap-2">
@@ -264,22 +278,41 @@ export default function InfoFormularioPage() {
         </div>
 
         {/* Campo de assinatura abaixo dos selects */}
-        <div className="grid gap-2 mt-4">
+        <div className="p-4 max-w-lg w-full">
           <Label htmlFor="assinatura">Assinatura</Label>
-          <div className="rounded-md border bg-white p-2">
+
+          <div className="rounded-md border bg-white p-2 mt-2">
             <SignatureCanvas
-              ref={(ref) => (sigPadRef.current = ref)}
+              ref={sigPadRef}
               penColor="#000000"
               backgroundColor="#ffffff"
               canvasProps={{ className: "w-full h-40 border rounded" }}
             />
           </div>
 
-          <div className="flex gap-2">
-            <Button type="button" variant="secondary" onClick={clearSignature}>
-              Limpar Assinatura
+          <div className="flex gap-2 mt-2">
+            <Button
+              type="button"
+              className="bg-[#4288a8] text-white"
+              onClick={clearSignature}
+            >
+              Limpar
+            </Button>
+            <Button type="button" onClick={saveSignature}>
+              Salvar Assinatura
             </Button>
           </div>
+
+          {assinaturaDataUrl && (
+            <div className="mt-4">
+              <p className="font-semibold">Prévia da Assinatura:</p>
+              <img
+                src={assinaturaDataUrl}
+                alt="Assinatura"
+                className="mt-2 border rounded max-h-40"
+              />
+            </div>
+          )}
         </div>
       </CardContent>
 
