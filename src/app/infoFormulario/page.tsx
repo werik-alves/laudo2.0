@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -14,6 +14,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import SignatureCanvas from "react-signature-canvas";
 
 // Tipos explícitos para evitar "any"
 type EstadoEquipamento = "funcionando" | "nao_funcionando" | "";
@@ -31,12 +32,11 @@ export default function InfoFormularioPage() {
   const [setor, setSetor] = useState("");
   const [testesRealizados, setTestesRealizados] = useState("");
   const [diagnostico, setDiagnostico] = useState("");
-  // Tipar corretamente os estados (sem any)
+  //   Tipar corretamente os estados (sem any)
   const [estadoEquipamento, setEstadoEquipamento] =
     useState<EstadoEquipamento>("");
   const [necessidade, setNecessidade] = useState<Necessidade>("");
 
-  // Handlers tipados para os selects
   const handleEstadoEquipamentoChange = (
     e: React.ChangeEvent<HTMLSelectElement>
   ) => {
@@ -52,6 +52,11 @@ export default function InfoFormularioPage() {
   const [fullName, setFullName] = useState<string>("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string>("");
+  const sigPadRef = useRef<any>(null);
+  const [assinaturaDataUrl, setAssinaturaDataUrl] = useState<string>("");
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const isDrawingRef = useRef<boolean>(false);
+  const lastPosRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const fullName = localStorage.getItem("fullName") || "";
@@ -87,6 +92,19 @@ export default function InfoFormularioPage() {
       if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
     };
   }, [imagePreviewUrl]);
+
+  const saveSignature = () => {
+    const pad = sigPadRef.current;
+    if (pad && !pad.isEmpty()) {
+      const dataUrl = pad.getTrimmedCanvas().toDataURL("image/png");
+      setAssinaturaDataUrl(dataUrl);
+    }
+  };
+
+  const clearSignature = () => {
+    const pad = sigPadRef.current;
+    if (pad) pad.clear();
+  };
 
   return (
     <Card className="max-w-4xl mx-auto my-6">
@@ -223,7 +241,7 @@ export default function InfoFormularioPage() {
               onChange={handleEstadoEquipamentoChange}
               className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
-              <option value="">Selecione</option>
+              <option value="">Selecione...</option>
               <option value="funcionando">Funcionando</option>
               <option value="nao_funcionando">Não funcionando</option>
             </select>
@@ -237,11 +255,30 @@ export default function InfoFormularioPage() {
               onChange={handleNecessidadeChange}
               className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
             >
-              <option value="">Selecione</option>
+              <option value="">Selecione...</option>
               <option value="substituido">Ser substituído</option>
-              <option value="enviar_conserto">Enviado p/ conserto</option>
+              <option value="enviar_conserto">Enviado p/ concêrto</option>
               <option value="descartado">Ser descartado</option>
             </select>
+          </div>
+        </div>
+
+        {/* Campo de assinatura abaixo dos selects */}
+        <div className="grid gap-2 mt-4">
+          <Label htmlFor="assinatura">Assinatura</Label>
+          <div className="rounded-md border bg-white p-2">
+            <SignatureCanvas
+              ref={(ref) => (sigPadRef.current = ref)}
+              penColor="#000000"
+              backgroundColor="#ffffff"
+              canvasProps={{ className: "w-full h-40 border rounded" }}
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <Button type="button" variant="secondary" onClick={clearSignature}>
+              Limpar Assinatura
+            </Button>
           </div>
         </div>
       </CardContent>
