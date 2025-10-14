@@ -24,3 +24,20 @@ model Setor {
   nome      String   @unique @db.VarChar(255)
   createdAt DateTime @default(now())
 }
+
+model Equipamento {
+  id        Int      @id @default(autoincrement())
+  nome      String   @unique @db.VarChar(255)
+  modelos   Modelo[]
+  createdAt DateTime @default(now())
+}
+
+model Modelo {
+  id            Int         @id @default(autoincrement())
+  nome          String      @db.VarChar(255)
+  equipamentoId Int
+  equipamento   Equipamento @relation(fields: [equipamentoId], references: [id])
+  createdAt     DateTime    @default(now())
+
+  @@unique([nome, equipamentoId])
+}

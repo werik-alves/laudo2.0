@@ -1,9 +1,8 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-// import { ldapAuthenticateAndGetFullName } from "./auth/ldap";
-// import jwt from "jsonwebtoken";
-// import { PrismaClient, Prisma } from "@prisma/client";
+import equipamentosRouter from "./routes/equipamentos";
+import modelosRouter from "./routes/modelos";
 import authRouter from "./routes/auth";
 import lojasRouter from "./routes/lojas";
 // import laudosRouter from "./routes/laudos";
@@ -27,6 +26,8 @@ app.use("/auth", authRouter);
 // app.use("/lojas", lojasRouter);
 app.use("/lojas", lojasRouter);
 app.use("/setores", setoresRouter);
+app.use("/equipamentos", equipamentosRouter);
+app.use("/modelos", modelosRouter);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
