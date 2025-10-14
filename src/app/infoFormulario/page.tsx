@@ -18,7 +18,8 @@ import SignatureCanvas from "react-signature-canvas";
 // Tipos explícitos para evitar "any"
 type EstadoEquipamento = "funcionando" | "nao_funcionando" | "";
 type Necessidade = "substituido" | "enviar_conserto" | "descartado" | "";
-type LojaType = { id: number; nome: string };
+type SetorType = { id: number; nome: string };
+// type LojaType = { id: number; nome: string };
 
 export default function InfoFormularioPage() {
   const router = useRouter();
@@ -29,6 +30,7 @@ export default function InfoFormularioPage() {
   const [loja, setLoja] = useState("");
   const [tombo, setTombo] = useState("");
   const [modelo, setModelo] = useState("");
+  const [setores, setSetores] = useState<SetorType[]>([]);
   const [setor, setSetor] = useState("");
   const [testesRealizados, setTestesRealizados] = useState("");
   const [diagnostico, setDiagnostico] = useState("");
@@ -124,6 +126,13 @@ export default function InfoFormularioPage() {
       .catch((err) => console.error("Erro ao carregar lojas:", err));
   }, []);
 
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/setores`)
+      .then((res) => res.json())
+      .then((data: SetorType[]) => setSetores(data))
+      .catch((err) => console.error("Erro ao carregar setores:", err));
+  }, []);
+
   return (
     <Card className="max-w-4xl mx-auto my-6">
       <CardHeader>
@@ -201,12 +210,19 @@ export default function InfoFormularioPage() {
 
           <div className="grid gap-2">
             <Label htmlFor="setor">Setor</Label>
-            <Input
+            <select
               id="setor"
               value={setor}
               onChange={(e) => setSetor(e.target.value)}
-              placeholder="Seleção futura a partir do banco"
-            />
+              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Selecione...</option>
+              {setores.map((s) => (
+                <option key={s.id} value={s.nome}>
+                  {s.nome}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid gap-2">
