@@ -3,23 +3,23 @@ import express from "express";
 import cors from "cors";
 import { ldapAuthenticateAndGetFullName } from "./auth/ldap";
 import jwt from "jsonwebtoken";
+import { PrismaClient, Prisma } from "@prisma/client";
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 
 app.use(
   cors({
-    origin: true, // aceita qualquer origem
+    origin: true,
     methods: ["GET", "POST", "OPTIONS"],
   })
 );
-// Habilita parser JSON e URL-encoded
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// (Opcional) Responder preflight explicitamente
 app.options("*", cors({ origin: true, methods: ["GET", "POST", "OPTIONS"] }));
 
+const prisma = new PrismaClient();
 app.post("/auth/login", async (req, res) => {
   const { username, password } = req.body || {};
 
@@ -39,6 +39,40 @@ app.post("/auth/login", async (req, res) => {
     return res.status(401).json({ error: "Usuário ou senha inválidos" });
   } catch (err) {
     console.error("Erro no login:", err);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// Listar lojas
+app.get("/lojas", async (_req, res) => {
+  try {
+    const lojas = await prisma.loja.findMany({ orderBy: { nome: "asc" } });
+    return res.status(200).json(lojas);
+  } catch (err) {
+    console.error("Erro ao listar lojas:", err);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+});
+
+// Criar loja
+app.post("/lojas", async (req, res) => {
+  try {
+    const { nome } = req.body ?? {};
+    const nomeTrim = String(nome || "").trim();
+    if (!nomeTrim) {
+      return res.status(400).json({ error: "Nome da loja é obrigatório" });
+    }
+
+    const loja = await prisma.loja.create({ data: { nome: nomeTrim } });
+    return res.status(201).json(loja);
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    ) {
+      return res.status(409).json({ error: "Loja já cadastrada" });
+    }
+    console.error("Erro ao criar loja:", err);
     return res.status(500).json({ error: "Erro interno" });
   }
 });

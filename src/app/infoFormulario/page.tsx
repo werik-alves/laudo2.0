@@ -15,10 +15,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import SignatureCanvas from "react-signature-canvas";
-
 // Tipos explícitos para evitar "any"
 type EstadoEquipamento = "funcionando" | "nao_funcionando" | "";
 type Necessidade = "substituido" | "enviar_conserto" | "descartado" | "";
+type LojaType = { id: number; nome: string };
 
 export default function InfoFormularioPage() {
   const router = useRouter();
@@ -57,6 +57,10 @@ export default function InfoFormularioPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isDrawingRef = useRef<boolean>(false);
   const lastPosRef = useRef<{ x: number; y: number } | null>(null);
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  type LojaType = { id: number; nome: string };
+  const [lojas, setLojas] = useState<LojaType[]>([]);
 
   useEffect(() => {
     const fullName = localStorage.getItem("fullName") || "";
@@ -112,6 +116,13 @@ export default function InfoFormularioPage() {
     setImageFile(null);
     setImagePreviewUrl("");
   };
+  //lojas
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/lojas`)
+      .then((res) => res.json())
+      .then((data: LojaType[]) => setLojas(data))
+      .catch((err) => console.error("Erro ao carregar lojas:", err));
+  }, []);
 
   return (
     <Card className="max-w-4xl mx-auto my-6">
@@ -151,12 +162,19 @@ export default function InfoFormularioPage() {
 
           <div className="grid gap-2">
             <Label htmlFor="loja">Loja</Label>
-            <Input
+            <select
               id="loja"
               value={loja}
               onChange={(e) => setLoja(e.target.value)}
-              placeholder="Seleção futura a partir do banco"
-            />
+              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Selecione...</option>
+              {lojas.map((l) => (
+                <option key={l.id} value={l.nome}>
+                  {l.nome}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid gap-2">
