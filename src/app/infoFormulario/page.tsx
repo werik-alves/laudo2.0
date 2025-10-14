@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -15,11 +15,11 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import SignatureCanvas from "react-signature-canvas";
+import { LojaType } from "@/types/domain";
 // Tipos explícitos para evitar "any"
 type EstadoEquipamento = "funcionando" | "nao_funcionando" | "";
 type Necessidade = "substituido" | "enviar_conserto" | "descartado" | "";
 type SetorType = { id: number; nome: string };
-// type LojaType = { id: number; nome: string };
 
 export default function InfoFormularioPage() {
   const router = useRouter();
@@ -61,7 +61,7 @@ export default function InfoFormularioPage() {
   const lastPosRef = useRef<{ x: number; y: number } | null>(null);
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  type LojaType = { id: number; nome: string };
+  // Remova a definição inline de LojaType; use o import acima
   const [lojas, setLojas] = useState<LojaType[]>([]);
 
   useEffect(() => {
@@ -127,10 +127,22 @@ export default function InfoFormularioPage() {
   }, []);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/setores`)
-      .then((res) => res.json())
-      .then((data: SetorType[]) => setSetores(data))
-      .catch((err) => console.error("Erro ao carregar setores:", err));
+    const baseUrl = API_BASE_URL || "http://localhost:4000";
+    fetch(`${baseUrl}/setores`)
+      .then(async (res) => {
+        if (!res.ok)
+          throw new Error(`Falha ao carregar setores: ${res.status}`);
+        return res.json();
+      })
+      .then((data: SetorType[]) => {
+        setSetores(data);
+        if (data.length > 0) {
+          setSetor((prev) => prev || data[0].nome);
+        }
+      })
+      .catch((err) => {
+        console.error("Erro ao buscar setores:", err);
+      });
   }, []);
 
   return (
