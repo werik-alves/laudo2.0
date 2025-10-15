@@ -18,6 +18,12 @@ export default function AdminHomePage() {
         <Link href="/admin/modelos">
           <Button>Gerenciar Modelos</Button>
         </Link>
+        <Link href="/admin/lojas">
+          <Button>Gerenciar Lojas</Button>
+        </Link>
+        <Link href="/admin/setores">
+          <Button>Gerenciar Setores</Button>
+        </Link>
       </CardContent>
     </Card>
   );

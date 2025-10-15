@@ -18,6 +18,12 @@ export default function AdminLayout({
         <Link href="/admin/modelos">
           <Button>Modelos</Button>
         </Link>
+        <Link href="/admin/lojas">
+          <Button>Lojas</Button>
+        </Link>
+        <Link href="/admin/setores">
+          <Button>Setores</Button>
+        </Link>
       </div>
       {children}
     </div>
