@@ -19,6 +19,9 @@ import { LojaType } from "@/types/domain";
 // Tipos explícitos para evitar "any"
 type EstadoEquipamento = "funcionando" | "nao_funcionando" | "";
 type Necessidade = "substituido" | "enviar_conserto" | "descartado" | "";
+// Tipos locais para listagem
+type EquipamentoListItem = { id: number; nome: string };
+type ModeloListItem = { id: number; nome: string; equipamentoId: number };
 type SetorType = { id: number; nome: string };
 
 export default function InfoFormularioPage() {
@@ -34,6 +37,12 @@ export default function InfoFormularioPage() {
   const [setor, setSetor] = useState("");
   const [testesRealizados, setTestesRealizados] = useState("");
   const [diagnostico, setDiagnostico] = useState("");
+  // Estados para listas e seleção
+  type EquipamentoListItem = { id: number; nome: string };
+  type ModeloListItem = { id: number; nome: string; equipamentoId: number };
+  const [equipamentos, setEquipamentos] = useState<EquipamentoListItem[]>([]);
+  const [equipamentoId, setEquipamentoId] = useState<number | null>(null);
+  const [modelos, setModelos] = useState<ModeloListItem[]>([]);
   //   Tipar corretamente os estados (sem any)
   const [estadoEquipamento, setEstadoEquipamento] =
     useState<EstadoEquipamento>("");
@@ -145,6 +154,54 @@ export default function InfoFormularioPage() {
       });
   }, []);
 
+  // Carregar equipamentos (novo)
+  useEffect(() => {
+    const baseUrl = API_BASE_URL || "http://localhost:4000";
+    fetch(`${baseUrl}/equipamentos`)
+      .then(async (res) => {
+        if (!res.ok)
+          throw new Error(`Falha ao carregar equipamentos: ${res.status}`);
+        return res.json();
+      })
+      .then((data: EquipamentoListItem[]) => setEquipamentos(data))
+      .catch((err) => console.error("Erro ao buscar equipamentos:", err));
+  }, []);
+
+  // Carregar modelos quando equipamento muda (novo)
+  useEffect(() => {
+    const baseUrl = API_BASE_URL || "http://localhost:4000";
+    if (equipamentoId != null) {
+      fetch(`${baseUrl}/modelos?equipamentoId=${equipamentoId}`)
+        .then(async (res) => {
+          if (!res.ok)
+            throw new Error(`Falha ao carregar modelos: ${res.status}`);
+          return res.json();
+        })
+        .then((data: ModeloListItem[]) => {
+          setModelos(data);
+          setModelo("");
+        })
+        .catch((err) => console.error("Erro ao buscar modelos:", err));
+    } else {
+      setModelos([]);
+    }
+  }, [equipamentoId]);
+
+  // Handler para seleção de equipamento (novo)
+  const handleEquipamentoSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = Number(e.target.value);
+    if (!id) {
+      setEquipamentoId(null);
+      setEquipamento("");
+      setModelos([]);
+      setModelo("");
+      return;
+    }
+    setEquipamentoId(id);
+    const selected = equipamentos.find((eq) => eq.id === id);
+    setEquipamento(selected?.nome ?? "");
+  };
+
   return (
     <Card className="max-w-4xl mx-auto my-6">
       <CardHeader>
@@ -171,14 +228,22 @@ export default function InfoFormularioPage() {
             <Input id="nomeTecnico" value={fullName} readOnly />
           </div>
 
+          {/* Equipamento: trocar Input por Select (novo) */}
           <div className="grid gap-2">
             <Label htmlFor="equipamento">Equipamento</Label>
-            <Input
+            <select
               id="equipamento"
-              value={equipamento}
-              onChange={(e) => setEquipamento(e.target.value)}
-              placeholder="Seleção futura a partir do banco"
-            />
+              value={equipamentoId ?? ""}
+              onChange={handleEquipamentoSelect}
+              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Selecione...</option>
+              {equipamentos.map((eq) => (
+                <option key={eq.id} value={eq.id}>
+                  {eq.nome}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid gap-2">
@@ -210,14 +275,23 @@ export default function InfoFormularioPage() {
             />
           </div>
 
+          {/* Modelo: depende do equipamento selecionado */}
           <div className="grid gap-2">
             <Label htmlFor="modelo">Modelo</Label>
-            <Input
+            <select
               id="modelo"
               value={modelo}
               onChange={(e) => setModelo(e.target.value)}
-              placeholder="Seleção futura a partir do banco"
-            />
+              disabled={equipamentoId == null}
+              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Selecione...</option>
+              {modelos.map((m) => (
+                <option key={m.id} value={m.nome}>
+                  {m.nome}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid gap-2">
