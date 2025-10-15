@@ -18,6 +18,9 @@ export function LoginForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [goAdmin, setGoAdmin] = useState(false);
+  const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -30,13 +33,12 @@ export function LoginForm() {
     const password = String(formData.get("password") || "");
 
     try {
-      // usa x-www-form-urlencoded para evitar preflight
       const body = new URLSearchParams({ username, password });
-      const resp = await fetch("http://localhost:4000/auth/login", {
+      const resp = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body,
-        credentials: "include", // importante para receber o cookie
+        credentials: "include",
       });
 
       const data = await resp.json();
@@ -47,10 +49,16 @@ export function LoginForm() {
       }
 
       if (data?.fullName) localStorage.setItem("fullName", data.fullName);
-      // opcional: manter também em localStorage
       if (data?.token) localStorage.setItem("token", data.token);
 
-      router.push("/infoFormulario");
+      if (goAdmin && data?.isAdmin === true) {
+        router.push("/admin");
+      } else {
+        if (goAdmin && data?.isAdmin !== true) {
+          setErrorMsg("Seu perfil não tem acesso ao painel administrador.");
+        }
+        router.push("/infoFormulario");
+      }
     } catch (err) {
       setErrorMsg("Erro de rede ou servidor indisponível");
       setLoading(false);
@@ -88,6 +96,18 @@ export function LoginForm() {
               required
               autoComplete="current-password"
             />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              id="adminPanel"
+              type="checkbox"
+              checked={goAdmin}
+              onChange={(e) => setGoAdmin(e.target.checked)}
+            />
+            <Label htmlFor="adminPanel">
+              Ir direto ao painel administrador
+            </Label>
           </div>
 
           {errorMsg && <p className="text-sm text-red-600">{errorMsg}</p>}

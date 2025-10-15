@@ -41,3 +41,10 @@ model Modelo {
 
   @@unique([nome, equipamentoId])
 }
+
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique @db.VarChar(255)
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
