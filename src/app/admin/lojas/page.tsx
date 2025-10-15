@@ -123,7 +123,7 @@ export default function AdminLojasPage() {
                   >
                     Editar
                   </Button>
-                  <Button variant="destructive" onClick={() => excluir(l.id)}>
+                  <Button variant={"outline"} onClick={() => excluir(l.id)}>
                     Excluir
                   </Button>
                 </>

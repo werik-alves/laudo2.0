@@ -158,7 +158,7 @@ export default function AdminModelosPage() {
                   >
                     Editar
                   </Button>
-                  <Button variant="destructive" onClick={() => excluir(m.id)}>
+                  <Button variant="ghost" onClick={() => excluir(m.id)}>
                     Excluir
                   </Button>
                 </>

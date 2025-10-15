@@ -123,7 +123,7 @@ export default function AdminSetoresPage() {
                   >
                     Editar
                   </Button>
-                  <Button variant="destructive" onClick={() => excluir(s.id)}>
+                  <Button variant="ghost" onClick={() => excluir(s.id)}>
                     Excluir
                   </Button>
                 </>

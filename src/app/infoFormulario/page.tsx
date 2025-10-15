@@ -74,19 +74,32 @@ export default function InfoFormularioPage() {
   const [lojas, setLojas] = useState<LojaType[]>([]);
 
   useEffect(() => {
-    const fullName = localStorage.getItem("fullName") || "";
-    const tokens = fullName.trim().split(/\s+/);
-    const firstTwo = tokens.slice(0, 2).join(" ");
-    const storedFullName =
-      (typeof window !== "undefined" && localStorage.getItem("fullName")) || "";
-    setFullName(storedFullName);
-    setNomeTecnico(firstTwo || fullName);
-    const d = new Date();
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const formatted = `${pad(d.getDate())}/${pad(
-      d.getMonth() + 1
-    )}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    setDataAtual(formatted);
+    // valida sessão no backend ao entrar na página
+    const baseUrl = API_BASE_URL || "http://localhost:4000";
+    fetch(`${baseUrl}/auth/me`, { credentials: "include" })
+      .then(async (resp) => {
+        if (!resp.ok) {
+          router.replace("/");
+          return;
+        }
+        const data = await resp.json();
+        const name = String(
+          data?.fullName || localStorage.getItem("fullName") || ""
+        );
+        setFullName(name);
+        const tokens = name.trim().split(/\s+/);
+        const firstTwo = tokens.slice(0, 2).join(" ");
+        setNomeTecnico(firstTwo || name);
+        const d = new Date();
+        const pad = (n: number) => String(n).padStart(2, "0");
+        const formatted = `${pad(d.getDate())}/${pad(
+          d.getMonth() + 1
+        )}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        setDataAtual(formatted);
+      })
+      .catch(() => {
+        router.replace("/");
+      });
   }, [router]);
 
   function onlyDigits(value: string) {
@@ -445,10 +458,18 @@ export default function InfoFormularioPage() {
         >
           Imprimir
         </Button>
+
         <Button
           type="button"
           variant="outline"
-          onClick={() => {
+          onClick={async () => {
+            const baseUrl = API_BASE_URL || "http://localhost:4000";
+            try {
+              await fetch(`${baseUrl}/auth/logout`, {
+                method: "POST",
+                credentials: "include",
+              });
+            } catch {}
             localStorage.removeItem("token");
             localStorage.removeItem("fullName");
             router.replace("/");

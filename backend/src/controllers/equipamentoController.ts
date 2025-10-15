@@ -72,7 +72,7 @@ export async function update(req: Request, res: Response) {
       data: { nome },
     });
     return res.status(200).json(equipamento);
-  } catch (err: any) {
+  } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError) {
       if (err.code === "P2025") {
         return res.status(404).json({ error: "Equipamento não encontrado" });
@@ -93,7 +93,7 @@ export async function remove(req: Request, res: Response) {
     }
     await prisma.equipamento.delete({ where: { id } });
     return res.status(204).send();
-  } catch (err: any) {
+  } catch (err) {
     if (
       err instanceof Prisma.PrismaClientKnownRequestError &&
       err.code === "P2025"

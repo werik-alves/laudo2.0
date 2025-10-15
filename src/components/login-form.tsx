@@ -36,6 +36,7 @@ export function LoginForm() {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body,
+        credentials: "include", // importante para receber o cookie
       });
 
       const data = await resp.json();
@@ -45,8 +46,8 @@ export function LoginForm() {
         return;
       }
 
-      // guarda dados para usar no formulário
       if (data?.fullName) localStorage.setItem("fullName", data.fullName);
+      // opcional: manter também em localStorage
       if (data?.token) localStorage.setItem("token", data.token);
 
       router.push("/infoFormulario");
