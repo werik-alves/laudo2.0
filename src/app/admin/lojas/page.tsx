@@ -13,6 +13,10 @@ export default function AdminLojasPage() {
   const [lojas, setLojas] = useState<LojaType[]>([]);
   const [novoNome, setNovoNome] = useState("");
 
+  // edição inline
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingNome, setEditingNome] = useState("");
+
   const load = async () => {
     const res = await fetch(`${API_BASE_URL}/lojas`);
     const data = await res.json();
@@ -39,6 +43,37 @@ export default function AdminLojasPage() {
     }
   };
 
+  // salvar edição
+  const salvar = async (id: number) => {
+    const nome = editingNome.trim();
+    if (!nome) return;
+    const res = await fetch(`${API_BASE_URL}/lojas/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome }),
+    });
+    if (res.ok) {
+      setEditingId(null);
+      setEditingNome("");
+      await load();
+    } else {
+      alert("Falha ao atualizar loja");
+    }
+  };
+
+  // excluir
+  const excluir = async (id: number) => {
+    if (!confirm("Deseja excluir esta loja?")) return;
+    const res = await fetch(`${API_BASE_URL}/lojas/${id}`, {
+      method: "DELETE",
+    });
+    if (res.status === 204) {
+      await load();
+    } else {
+      alert("Falha ao excluir loja");
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -58,7 +93,41 @@ export default function AdminLojasPage() {
         <div className="grid gap-2">
           {lojas.map((l) => (
             <div key={l.id} className="flex items-center gap-2">
-              <span className="min-w-[200px]">{l.nome}</span>
+              {editingId === l.id ? (
+                <>
+                  <Input
+                    className="max-w-sm"
+                    value={editingNome}
+                    onChange={(e) => setEditingNome(e.target.value)}
+                  />
+                  <Button onClick={() => salvar(l.id)}>Salvar</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setEditingId(null);
+                      setEditingNome("");
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <span className="min-w-[200px]">{l.nome}</span>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setEditingId(l.id);
+                      setEditingNome(l.nome);
+                    }}
+                  >
+                    Editar
+                  </Button>
+                  <Button variant="destructive" onClick={() => excluir(l.id)}>
+                    Excluir
+                  </Button>
+                </>
+              )}
             </div>
           ))}
           {lojas.length === 0 && <span>Nenhuma loja cadastrada.</span>}

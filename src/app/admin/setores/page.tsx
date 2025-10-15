@@ -13,6 +13,10 @@ export default function AdminSetoresPage() {
   const [setores, setSetores] = useState<SetorType[]>([]);
   const [novoNome, setNovoNome] = useState("");
 
+  // edição inline
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingNome, setEditingNome] = useState("");
+
   const load = async () => {
     const res = await fetch(`${API_BASE_URL}/setores`);
     const data = await res.json();
@@ -39,6 +43,37 @@ export default function AdminSetoresPage() {
     }
   };
 
+  // salvar edição
+  const salvar = async (id: number) => {
+    const nome = editingNome.trim();
+    if (!nome) return;
+    const res = await fetch(`${API_BASE_URL}/setores/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nome }),
+    });
+    if (res.ok) {
+      setEditingId(null);
+      setEditingNome("");
+      await load();
+    } else {
+      alert("Falha ao atualizar setor");
+    }
+  };
+
+  // excluir
+  const excluir = async (id: number) => {
+    if (!confirm("Deseja excluir este setor?")) return;
+    const res = await fetch(`${API_BASE_URL}/setores/${id}`, {
+      method: "DELETE",
+    });
+    if (res.status === 204) {
+      await load();
+    } else {
+      alert("Falha ao excluir setor");
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -58,7 +93,41 @@ export default function AdminSetoresPage() {
         <div className="grid gap-2">
           {setores.map((s) => (
             <div key={s.id} className="flex items-center gap-2">
-              <span className="min-w-[200px]">{s.nome}</span>
+              {editingId === s.id ? (
+                <>
+                  <Input
+                    className="max-w-sm"
+                    value={editingNome}
+                    onChange={(e) => setEditingNome(e.target.value)}
+                  />
+                  <Button onClick={() => salvar(s.id)}>Salvar</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setEditingId(null);
+                      setEditingNome("");
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <span className="min-w-[200px]">{s.nome}</span>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setEditingId(s.id);
+                      setEditingNome(s.nome);
+                    }}
+                  >
+                    Editar
+                  </Button>
+                  <Button variant="destructive" onClick={() => excluir(s.id)}>
+                    Excluir
+                  </Button>
+                </>
+              )}
             </div>
           ))}
           {setores.length === 0 && <span>Nenhum setor cadastrado.</span>}

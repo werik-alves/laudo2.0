@@ -53,3 +53,34 @@ export async function removeById(req: Request, res: Response) {
     return res.status(500).json({ error: "Erro interno" });
   }
 }
+
+export async function update(req: Request, res: Response) {
+  try {
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ error: "ID inválido" });
+    }
+
+    const nomeTrim = String(req.body?.nome ?? "").trim();
+    if (!nomeTrim) {
+      return res.status(400).json({ error: "Nome é obrigatório" });
+    }
+
+    const setor = await prisma.setor.update({
+      where: { id },
+      data: { nome: nomeTrim },
+    });
+    return res.status(200).json(setor);
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === "P2025") {
+        return res.status(404).json({ error: "Setor não encontrado" });
+      }
+      if (err.code === "P2002") {
+        return res.status(409).json({ error: "Já existe setor com esse nome" });
+      }
+    }
+    console.error("Erro ao atualizar setor:", err);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+}

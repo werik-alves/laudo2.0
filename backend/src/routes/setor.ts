@@ -9,6 +9,9 @@ router.get("/", setorController.list);
 // Cria setor
 router.post("/", setorController.create);
 
+// Atualiza setor por ID
+router.put("/:id", setorController.update);
+
 // Deleta setor por ID
 router.delete("/:id", setorController.removeById);
 

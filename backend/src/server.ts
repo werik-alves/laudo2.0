@@ -13,13 +13,16 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 app.use(
   cors({
     origin: true,
-    methods: ["GET", "POST", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   })
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.options("*", cors({ origin: true, methods: ["GET", "POST", "OPTIONS"] }));
+app.options(
+  "*",
+  cors({ origin: true, methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"] })
+);
 
 // Substitui handlers inline por routers
 app.use("/auth", authRouter);
