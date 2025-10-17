@@ -24,6 +24,12 @@ export default function AdminLayout({
         <Link href="/admin/setores">
           <Button>Setores</Button>
         </Link>
+        <Link href="/infoFormulario">
+          <Button>Laudo Tecnico</Button>
+        </Link>
+        <Link href="/admin/laudos">
+          <Button>Laudos Gerados</Button>
+        </Link>
       </div>
       {children}
     </div>
