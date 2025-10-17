@@ -200,6 +200,219 @@ export default function InfoFormularioPage() {
     }
   }, [equipamentoId]);
 
+  const fileToDataURL = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  //=========================
+  // Função para imprimir o PDF
+  //=========================
+
+  const handlePrint = async () => {
+    // Importa pdfmake dinamicamente
+    // @ts-ignore
+    const pdfMakeMod = await import("pdfmake/build/pdfmake");
+    // @ts-ignore
+    const pdfFontsMod = await import("pdfmake/build/vfs_fonts");
+
+    const pdfMake = pdfMakeMod.default || pdfMakeMod;
+    const pdfFonts = pdfFontsMod.default || pdfFontsMod;
+    pdfMake.vfs = pdfFonts.pdfMake?.vfs || pdfFonts.vfs;
+
+    // Dados formatados
+    const equipamentoNome =
+      equipamento ||
+      equipamentos.find((eq) => eq.id === equipamentoId)?.nome ||
+      "";
+    const modeloNome = modelo || "";
+    const estadoLabel =
+      estadoEquipamento === "funcionando"
+        ? "Funcionando"
+        : estadoEquipamento === "nao_funcionando"
+        ? "Não funcionando"
+        : "-";
+    const necessidadeLabel =
+      necessidade === "substituido"
+        ? "Ser substituído"
+        : necessidade === "enviar_conserto"
+        ? "Enviado p/ conserto"
+        : necessidade === "descartado"
+        ? "Ser descartado"
+        : "-";
+
+    // Converte imagem se existir
+    let imagemEquipamentoDataUrl: string | undefined;
+    if (imageFile) {
+      try {
+        imagemEquipamentoDataUrl = await fileToDataURL(imageFile);
+      } catch {}
+    }
+
+    // Assinatura
+    const assinaturaDataUrlLocal =
+      assinaturaDataUrl ||
+      (sigPadRef.current && !sigPadRef.current.isEmpty()
+        ? sigPadRef.current.getCanvas().toDataURL("image/png")
+        : undefined);
+
+    // ===================================================
+    // Conteúdo do PDF
+    // ===================================================
+    const content: unknown[] = [
+      {
+        text: "LAUDO TÉCNICO",
+        style: "header",
+        alignment: "center",
+        margin: [0, 0, 0, 15],
+      },
+      {
+        table: {
+          widths: ["100%"],
+          body: [
+            [
+              {
+                text: `Número do Chamado: ${numeroChamado || "-"}`,
+                bold: true,
+                fillColor: "#f2f2f2",
+                margin: [4, 4, 4, 4],
+              },
+            ],
+            [{ text: `Técnico: ${fullName || "-"}`, margin: [4, 2, 4, 2] }],
+            [{ text: `Data: ${dataAtual || "-"}`, margin: [4, 2, 4, 2] }],
+            [{ text: `Loja: ${loja || "-"}`, margin: [4, 2, 4, 2] }],
+            [{ text: `Setor: ${setor || "-"}`, margin: [4, 2, 4, 2] }],
+            [
+              {
+                text: `Equipamento: ${equipamentoNome || "-"} ${
+                  modeloNome || ""
+                }`,
+                margin: [4, 2, 4, 2],
+              },
+            ],
+            [{ text: `Tombo: ${tombo || "-"}`, margin: [4, 2, 4, 2] }],
+            [
+              {
+                text: `Estado do Equipamento: ${estadoLabel}`,
+                margin: [4, 2, 4, 2],
+              },
+            ],
+            [
+              {
+                text: `Necessidade: ${necessidadeLabel}`,
+                margin: [4, 2, 4, 2],
+              },
+            ],
+          ],
+        },
+        layout: {
+          hLineWidth: () => 0.5,
+          vLineWidth: () => 0.5,
+          hLineColor: () => "#cccccc",
+          vLineColor: () => "#cccccc",
+          paddingLeft: () => 5,
+          paddingRight: () => 5,
+          paddingTop: () => 3,
+          paddingBottom: () => 3,
+        },
+        margin: [0, 0, 0, 15],
+      },
+
+      { text: "TESTES REALIZADOS", style: "subheader", margin: [0, 10, 0, 4] },
+      { text: testesRealizados || "-", margin: [4, 0, 0, 8] },
+
+      { text: "DIAGNÓSTICO", style: "subheader", margin: [0, 10, 0, 4] },
+      { text: diagnostico || "-", margin: [4, 0, 0, 8] },
+    ];
+
+    // Imagem do equipamento
+    if (imagemEquipamentoDataUrl) {
+      content.push(
+        {
+          text: "IMAGEM DO EQUIPAMENTO",
+          style: "subheader",
+          margin: [0, 10, 0, 4],
+        },
+        {
+          table: {
+            widths: ["100%"],
+            body: [
+              [
+                {
+                  image: imagemEquipamentoDataUrl,
+                  width: 320,
+                  alignment: "center",
+                  margin: [0, 5, 0, 5],
+                },
+              ],
+            ],
+          },
+          layout: {
+            hLineWidth: () => 0.5,
+            vLineWidth: () => 0.5,
+            hLineColor: () => "#cccccc",
+            vLineColor: () => "#cccccc",
+          },
+          margin: [0, 0, 0, 8],
+        }
+      );
+    }
+
+    // Assinatura do técnico
+    if (assinaturaDataUrlLocal) {
+      content.push(
+        {
+          text: "ASSINATURA DO TÉCNICO",
+          style: "subheader",
+          margin: [0, 10, 0, 4],
+        },
+        {
+          table: {
+            widths: ["100%"],
+            body: [
+              [
+                {
+                  image: assinaturaDataUrlLocal,
+                  width: 160,
+                  alignment: "center",
+                  margin: [0, 5, 0, 5],
+                },
+              ],
+            ],
+          },
+          layout: {
+            hLineWidth: () => 0.5,
+            vLineWidth: () => 0.5,
+            hLineColor: () => "#cccccc",
+            vLineColor: () => "#cccccc",
+          },
+        }
+      );
+    }
+
+    // ===================================================
+    // Configuração do PDF
+    // ===================================================
+    const docDefinition: unknown = {
+      info: {
+        title: `Laudo Técnico - ${numeroChamado || "sem_chamado"}`,
+        author: fullName || "Técnico",
+      },
+      pageMargins: [40, 40, 40, 60],
+      defaultStyle: { fontSize: 10, lineHeight: 1.3 },
+      styles: {
+        header: { fontSize: 18, bold: true, color: "#2c3e50" },
+        subheader: { fontSize: 12, bold: true, color: "#000000" },
+      },
+      content,
+    };
+
+    pdfMake.createPdf(docDefinition).open();
+  };
+
   // Handler para seleção de equipamento (novo)
   const handleEquipamentoSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = Number(e.target.value);
@@ -452,13 +665,12 @@ export default function InfoFormularioPage() {
       <CardFooter className="flex justify-between gap-2">
         <Button
           type="button"
-          onClick={() => {
-            /* futuro: window.print(); */
+          onClick={async () => {
+            handlePrint();
           }}
         >
           Imprimir
         </Button>
-
         <Button
           type="button"
           variant="outline"
