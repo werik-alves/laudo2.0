@@ -20,3 +20,21 @@ export type Equipamento = {
   estado: EstadoEquipamento;
   necessidade: Necessidade;
 };
+
+export type InfoLaudo = {
+  id: number;
+  numeroChamado: string;
+  tecnico: string;
+  equipamento: string;
+  modelo: string;
+  loja: string;
+  setor: string;
+  tombo: string;
+  data: string;
+  testesRealizados?: string | null;
+  diagnostico?: string | null;
+  estadoEquipamento?: "FUNCIONANDO" | "NAO_FUNCIONANDO" | null;
+  necessidade?: "SUBSTITUIDO" | "ENVIAR_CONSERTO" | "DESCARTADO" | null;
+  createdAt: string;
+  createdByUsername?: string | null;
+};

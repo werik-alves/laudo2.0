@@ -74,3 +74,25 @@ export async function create(req: Request, res: Response) {
     return res.status(500).json({ error: "Erro interno" });
   }
 }
+
+export async function list(req: Request, res: Response) {
+  try {
+    const numeroChamado = String(
+      (req.query.numeroChamado ?? req.query.q ?? "").toString()
+    ).trim();
+
+    const where = numeroChamado
+      ? { numeroChamado: { contains: numeroChamado } }
+      : undefined;
+
+    const laudos = await prisma.infoLaudo.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+    });
+
+    return res.status(200).json(laudos);
+  } catch (err) {
+    console.error("Erro ao listar info_laudos:", err);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+}
