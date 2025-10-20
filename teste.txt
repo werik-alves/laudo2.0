@@ -212,42 +212,7 @@ export default function InfoFormularioPage() {
   // Função para imprimir o PDF
   //=========================
 
-  async function saveLaudoNoBanco() {
-    const baseUrl = API_BASE_URL || "http://localhost:4000";
-    const equipamentoNome =
-      equipamento ||
-      equipamentos.find((eq) => eq.id === equipamentoId)?.nome ||
-      "";
-
-    const payload = {
-      numeroChamado,
-      tecnico: fullName,
-      equipamento: equipamentoNome,
-      modelo,
-      loja,
-      setor,
-      tombo,
-      data: dataAtual,
-      testesRealizados,
-      diagnostico,
-      estadoEquipamento, // controller mapeia para enum
-      necessidade, // controller mapeia para enum
-    };
-
-    try {
-      await fetch(`${baseUrl}/info-laudos`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
-    } catch (err) {
-      console.error("Falha ao salvar laudo:", err);
-    }
-  }
-
   const handlePrint = async () => {
-    await saveLaudoNoBanco();
     // Importa pdfmake dinamicamente
     // @ts-ignore
     const pdfMakeMod = await import("pdfmake/build/pdfmake");

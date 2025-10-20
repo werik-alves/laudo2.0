@@ -48,3 +48,32 @@ model Usuario {
   isAdmin   Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+
+enum EstadoEquipamento {
+  FUNCIONANDO
+  NAO_FUNCIONANDO
+}
+
+enum Necessidade {
+  SUBSTITUIDO
+  ENVIAR_CONSERTO
+  DESCARTADO
+}
+
+model InfoLaudo {
+  id                Int                @id @default(autoincrement())
+  numeroChamado     String
+  tecnico           String
+  equipamento       String
+  modelo            String
+  loja              String
+  setor             String
+  tombo             String
+  data              String
+  testesRealizados  String?
+  diagnostico       String?
+  estadoEquipamento EstadoEquipamento?
+  necessidade       Necessidade?
+  createdAt         DateTime           @default(now())
+  createdByUsername String?
+}
