@@ -14,6 +14,8 @@ export default function AdminLaudosGeradosPage() {
   const [laudos, setLaudos] = useState<InfoLaudo[]>([]);
   const [tecnico, setTecnico] = useState("");
   const [numeroChamado, setNumeroChamado] = useState("");
+  const [data, setData] = useState(""); // ISO (YYYY-MM-DD) vindo do input date
+  const [tombo, setTombo] = useState("");
 
   async function excluirLaudo(id: number) {
     try {
@@ -39,17 +41,24 @@ export default function AdminLaudosGeradosPage() {
     }
   }
 
+  // Converte 'YYYY-MM-DD' para 'DD/MM/YYYY' para bater com o que está salvo no banco
+  function toBrDate(isoDate: string) {
+    const [y, m, d] = isoDate.split("-");
+    if (!y || !m || !d) return isoDate;
+    return `${d}/${m}/${y}`;
+  }
+
   const load = async () => {
     try {
       const token =
         typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const url = new URL(`${API_BASE_URL}/info-laudos`);
-      if (tecnico.trim()) {
-        url.searchParams.set("tecnico", tecnico.trim());
-      }
-      if (numeroChamado.trim()) {
+      if (tecnico.trim()) url.searchParams.set("tecnico", tecnico.trim());
+      if (numeroChamado.trim())
         url.searchParams.set("numeroChamado", numeroChamado.trim());
-      }
+      if (data.trim()) url.searchParams.set("data", toBrDate(data.trim()));
+      if (tombo.trim()) url.searchParams.set("tombo", tombo.trim());
+
       const res = await fetch(url.toString(), {
         method: "GET",
         headers: {
@@ -62,8 +71,8 @@ export default function AdminLaudosGeradosPage() {
         setLaudos([]);
         return;
       }
-      const data = (await res.json()) as InfoLaudo[];
-      setLaudos(data);
+      const dataJson = (await res.json()) as InfoLaudo[];
+      setLaudos(dataJson);
     } catch (err) {
       console.error("Erro ao buscar laudos:", err);
       setLaudos([]);
@@ -80,22 +89,41 @@ export default function AdminLaudosGeradosPage() {
         <CardTitle>Laudos Gerados</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <div className="grid gap-2 max-w-sm">
-          <Label>Técnico</Label>
-          <Input
-            value={tecnico}
-            onChange={(e) => setTecnico(e.target.value)}
-            placeholder="Digite o nome do técnico"
-          />
-        </div>
+        {/* Duas colunas lado a lado */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Coluna esquerda: Técnico e Número do Chamado */}
+          <div className="grid gap-2">
+            <Label>Técnico</Label>
+            <Input
+              value={tecnico}
+              onChange={(e) => setTecnico(e.target.value)}
+              placeholder="Digite o nome do técnico"
+            />
 
-        <div className="grid gap-2 max-w-sm">
-          <Label>Número do Chamado</Label>
-          <Input
-            value={numeroChamado}
-            onChange={(e) => setNumeroChamado(e.target.value)}
-            placeholder="Digite o número do chamado"
-          />
+            <Label>Número do Chamado</Label>
+            <Input
+              value={numeroChamado}
+              onChange={(e) => setNumeroChamado(e.target.value)}
+              placeholder="Digite o número do chamado"
+            />
+          </div>
+
+          {/* Coluna direita: Data (type=date) e Tombo */}
+          <div className="grid gap-2">
+            <Label>Data</Label>
+            <Input
+              type="date"
+              value={data}
+              onChange={(e) => setData(e.target.value)}
+            />
+
+            <Label>Tombo</Label>
+            <Input
+              value={tombo}
+              onChange={(e) => setTombo(e.target.value)}
+              placeholder="Digite o tombo (número)"
+            />
+          </div>
         </div>
 
         <div>
