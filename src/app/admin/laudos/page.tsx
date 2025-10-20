@@ -12,6 +12,7 @@ export default function AdminLaudosGeradosPage() {
     process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
 
   const [laudos, setLaudos] = useState<InfoLaudo[]>([]);
+  const [tecnico, setTecnico] = useState("");
   const [numeroChamado, setNumeroChamado] = useState("");
 
   const load = async () => {
@@ -19,6 +20,9 @@ export default function AdminLaudosGeradosPage() {
       const token =
         typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const url = new URL(`${API_BASE_URL}/info-laudos`);
+      if (tecnico.trim()) {
+        url.searchParams.set("tecnico", tecnico.trim());
+      }
       if (numeroChamado.trim()) {
         url.searchParams.set("numeroChamado", numeroChamado.trim());
       }
@@ -53,12 +57,24 @@ export default function AdminLaudosGeradosPage() {
       </CardHeader>
       <CardContent className="grid gap-4">
         <div className="grid gap-2 max-w-sm">
+          <Label>Técnico</Label>
+          <Input
+            value={tecnico}
+            onChange={(e) => setTecnico(e.target.value)}
+            placeholder="Digite o nome do técnico"
+          />
+        </div>
+
+        <div className="grid gap-2 max-w-sm">
           <Label>Número do Chamado</Label>
           <Input
             value={numeroChamado}
             onChange={(e) => setNumeroChamado(e.target.value)}
             placeholder="Digite o número do chamado"
           />
+        </div>
+
+        <div>
           <Button onClick={load}>Pesquisar</Button>
         </div>
 

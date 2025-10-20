@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
@@ -31,7 +30,6 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  // Garante que o usuário esteja autenticado primeiro
   requireAuth(req, res, () => {
     const user = (req as any).user;
     if (!user?.isAdmin) {

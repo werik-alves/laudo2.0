@@ -78,12 +78,16 @@ export async function create(req: Request, res: Response) {
 export async function list(req: Request, res: Response) {
   try {
     const numeroChamado = String(
-      (req.query.numeroChamado ?? req.query.q ?? "").toString()
+      (req.query.numeroChamado ?? "").toString()
     ).trim();
+    const tecnico = String((req.query.tecnico ?? "").toString()).trim();
 
-    const where = numeroChamado
-      ? { numeroChamado: { contains: numeroChamado } }
-      : undefined;
+    const filters: any[] = [];
+    if (numeroChamado)
+      filters.push({ numeroChamado: { contains: numeroChamado } });
+    if (tecnico) filters.push({ tecnico: { contains: tecnico } });
+
+    const where = filters.length ? { AND: filters } : undefined;
 
     const laudos = await prisma.infoLaudo.findMany({
       where,
