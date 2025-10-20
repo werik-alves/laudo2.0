@@ -14,7 +14,8 @@ export default function AdminLaudosGeradosPage() {
   const [laudos, setLaudos] = useState<InfoLaudo[]>([]);
   const [tecnico, setTecnico] = useState("");
   const [numeroChamado, setNumeroChamado] = useState("");
-  const [data, setData] = useState(""); // ISO (YYYY-MM-DD) vindo do input date
+  const [dataInicio, setDataInicio] = useState("");
+  const [dataFim, setDataFim] = useState("");
   const [tombo, setTombo] = useState("");
 
   async function excluirLaudo(id: number) {
@@ -53,11 +54,16 @@ export default function AdminLaudosGeradosPage() {
       const token =
         typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const url = new URL(`${API_BASE_URL}/info-laudos`);
+
       if (tecnico.trim()) url.searchParams.set("tecnico", tecnico.trim());
       if (numeroChamado.trim())
         url.searchParams.set("numeroChamado", numeroChamado.trim());
-      if (data.trim()) url.searchParams.set("data", toBrDate(data.trim()));
       if (tombo.trim()) url.searchParams.set("tombo", tombo.trim());
+
+      // intervalo de datas: YYYY-MM-DD
+      if (dataInicio.trim())
+        url.searchParams.set("dataInicio", dataInicio.trim());
+      if (dataFim.trim()) url.searchParams.set("dataFim", dataFim.trim());
 
       const res = await fetch(url.toString(), {
         method: "GET",
@@ -108,13 +114,20 @@ export default function AdminLaudosGeradosPage() {
             />
           </div>
 
-          {/* Coluna direita: Data (type=date) e Tombo */}
+          {/* Coluna direita: Data Inicial, Data Final e Tombo */}
           <div className="grid gap-2">
-            <Label>Data</Label>
+            <Label>Data Inicial</Label>
             <Input
               type="date"
-              value={data}
-              onChange={(e) => setData(e.target.value)}
+              value={dataInicio}
+              onChange={(e) => setDataInicio(e.target.value)}
+            />
+
+            <Label>Data Final</Label>
+            <Input
+              type="date"
+              value={dataFim}
+              onChange={(e) => setDataFim(e.target.value)}
             />
 
             <Label>Tombo</Label>
