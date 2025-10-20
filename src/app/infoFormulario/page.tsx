@@ -332,31 +332,51 @@ export default function InfoFormularioPage() {
     if (imagemEquipamentoDataUrl) {
       content.push(
         {
-          text: "IMAGEM DO EQUIPAMENTO",
+          text: "Imagem do equipamento",
           style: "subheader",
-          margin: [0, 10, 0, 4],
+          margin: [0, 12, 0, 4],
         },
         {
           table: {
-            widths: ["100%"],
+            widths: ["*"],
             body: [
               [
                 {
                   image: imagemEquipamentoDataUrl,
-                  width: 320,
+                  fit: [220, 160], // mantém a proporção, menor que antes
                   alignment: "center",
-                  margin: [0, 5, 0, 5],
+                  margin: [6, 6, 6, 6], // espaço interno entre imagem e borda
                 },
               ],
             ],
           },
           layout: {
-            hLineWidth: () => 0.5,
-            vLineWidth: () => 0.5,
-            hLineColor: () => "#cccccc",
-            vLineColor: () => "#cccccc",
+            hLineWidth: function () {
+              return 1;
+            },
+            vLineWidth: function () {
+              return 1;
+            },
+            hLineColor: function () {
+              return "#d1d5db";
+            }, // cinza leve
+            vLineColor: function () {
+              return "#d1d5db";
+            },
+            paddingLeft: function () {
+              return 4;
+            },
+            paddingRight: function () {
+              return 4;
+            },
+            paddingTop: function () {
+              return 4;
+            },
+            paddingBottom: function () {
+              return 4;
+            },
           },
-          margin: [0, 0, 0, 8],
+          margin: [0, 5, 0, 5], // margem externa da caixa
         }
       );
     }
