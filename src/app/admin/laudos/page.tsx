@@ -15,6 +15,30 @@ export default function AdminLaudosGeradosPage() {
   const [tecnico, setTecnico] = useState("");
   const [numeroChamado, setNumeroChamado] = useState("");
 
+  async function excluirLaudo(id: number) {
+    try {
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const res = await fetch(`${API_BASE_URL}/info-laudos/${id}`, {
+        method: "DELETE",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        credentials: "include",
+      });
+      if (res.status === 204 || res.status === 200) {
+        setLaudos((prev) => prev.filter((x) => x.id !== id));
+      } else {
+        const msg = await res.text();
+        console.error(`Falha ao excluir: ${res.status} ${msg}`);
+        alert("Falha ao excluir o laudo.");
+      }
+    } catch (err) {
+      console.error("Erro ao excluir laudo:", err);
+      alert("Erro ao excluir o laudo.");
+    }
+  }
+
   const load = async () => {
     try {
       const token =
@@ -102,7 +126,7 @@ export default function AdminLaudosGeradosPage() {
                 <Button disabled title="Em breve">
                   Imprimir
                 </Button>
-                <Button variant="ghost" disabled title="Em breve">
+                <Button variant="ghost" onClick={() => excluirLaudo(l.id)}>
                   Excluir
                 </Button>
               </div>

@@ -100,3 +100,21 @@ export async function list(req: Request, res: Response) {
     return res.status(500).json({ error: "Erro interno" });
   }
 }
+
+export async function remove(req: Request, res: Response) {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ error: "ID inválido" });
+    }
+
+    await prisma.infoLaudo.delete({ where: { id } });
+    return res.status(204).send();
+  } catch (err: any) {
+    if (err?.code === "P2025") {
+      return res.status(404).json({ error: "Laudo não encontrado" });
+    }
+    console.error("Erro ao excluir info_laudo:", err);
+    return res.status(500).json({ error: "Erro interno" });
+  }
+}
