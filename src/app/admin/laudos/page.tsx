@@ -214,6 +214,32 @@ export default function AdminLaudosGeradosPage() {
         ? `${l.equipamento} - ${l.modelo}`
         : l.equipamento;
 
+    // Helper para aplicar moldura sem alterar estrutura interna
+    const moldura = (conteudo: any, margin: number[] = [0, 0, 0, 10]) => ({
+      table: {
+        widths: ["*"],
+        body: [[{ stack: Array.isArray(conteudo) ? conteudo : [conteudo] }]],
+      },
+      layout: {
+        hLineWidth: () => 1,
+        vLineWidth: () => 1,
+        hLineColor: () => "#d1d5db",
+        vLineColor: () => "#d1d5db",
+        paddingLeft: () => 8,
+        paddingRight: () => 8,
+        paddingTop: () => 8,
+        paddingBottom: () => 8,
+      },
+      margin,
+    });
+
+    const titulo = {
+      text: "LAUDO TÉCNICO",
+      style: "header",
+      alignment: "center",
+      margin: [0, 0, 0, 10], // ajustado para manter o espaçamento sem moldura
+    };
+
     const reprintBanner = {
       table: {
         widths: ["*"],
@@ -242,80 +268,135 @@ export default function AdminLaudosGeradosPage() {
         hLineColor: () => "#e5e7eb",
         vLineColor: () => "#e5e7eb",
       },
-      margin: [0, 0, 0, 10],
+      margin: [0, 0, 0, 0],
     };
 
-    const content: any[] = [
-      {
-        text: "LAUDO TÉCNICO",
-        style: "header",
-        alignment: "center",
-        margin: [0, 0, 0, 15],
-      },
-      reprintBanner,
-      {
-        table: {
-          widths: ["100%"],
-          body: [
-            [
-              {
-                text: `Número do Chamado: ${l.numeroChamado || "-"}`,
-                bold: true,
-              },
-            ],
-            [{ text: `Técnico: ${l.tecnico || "-"}` }],
-            [{ text: `Data: ${l.data || "-"}` }],
-            [{ text: `Loja: ${l.loja || "-"}` }],
-            [{ text: `Setor: ${l.setor || "-"}` }],
-            [{ text: `Equipamento: ${equipamentoModelo || "-"}` }],
-            [{ text: `Tombo: ${l.tombo || "-"}` }],
-            [{ text: `Estado do Equipamento: ${estadoLabel}` }],
-            [{ text: `Necessidade: ${necessidadeLabel}` }],
+    const infoTable = {
+      table: {
+        widths: ["100%"],
+        body: [
+          [
+            {
+              text: `Número do Chamado: ${l.numeroChamado || "-"}`,
+              bold: true,
+              fillColor: "#f2f2f2",
+              margin: [4, 4, 4, 4],
+            },
           ],
-        },
-        layout: "lightHorizontalLines",
-        margin: [0, 0, 0, 15],
+          [
+            {
+              text: `Técnico: ${l.tecnico || l.createdByUsername || "-"}`,
+              margin: [4, 2, 4, 2],
+            },
+          ],
+          [{ text: `Data: ${l.data || "-"}`, margin: [4, 2, 4, 2] }],
+          [{ text: `Loja: ${l.loja || "-"}`, margin: [4, 2, 4, 2] }],
+          [{ text: `Setor: ${l.setor || "-"}`, margin: [4, 2, 4, 2] }],
+          [
+            {
+              text: `Equipamento: ${
+                l.modelo?.trim()
+                  ? `${l.equipamento} - ${l.modelo}`
+                  : l.equipamento || "-"
+              }`,
+              margin: [4, 2, 4, 2],
+            },
+          ],
+          [{ text: `Tombo: ${l.tombo || "-"}`, margin: [4, 2, 4, 2] }],
+          [
+            {
+              text: `Estado do Equipamento: ${estadoLabel}`,
+              margin: [4, 2, 4, 2],
+            },
+          ],
+          [{ text: `Necessidade: ${necessidadeLabel}`, margin: [4, 2, 4, 2] }],
+        ],
       },
+      layout: {
+        hLineWidth: () => 0.5,
+        vLineWidth: () => 0.5,
+        hLineColor: () => "#cccccc",
+        vLineColor: () => "#cccccc",
+        paddingLeft: () => 5,
+        paddingRight: () => 5,
+        paddingTop: () => 3,
+        paddingBottom: () => 3,
+      },
+      margin: [0, 0, 0, 0],
+    };
+
+    const assinaturaHeader = {
+      text: "ASSINATURA DO TÉCNICO",
+      style: "subheader",
+      margin: [0, 0, 0, 8],
+    };
+    const assinaturaContent = assinatura
+      ? {
+          table: {
+            widths: ["100%"],
+            body: [
+              [
+                {
+                  image: assinatura,
+                  width: 160,
+                  alignment: "center",
+                  margin: [0, 5, 0, 5],
+                },
+              ],
+            ],
+          },
+          layout: {
+            hLineWidth: () => 0.5,
+            vLineWidth: () => 0.5,
+            hLineColor: () => "#cccccc",
+            vLineColor: () => "#cccccc",
+          },
+        }
+      : {
+          stack: [
+            { text: "Assine aqui:", margin: [4, 0, 0, 6] },
+            {
+              canvas: [
+                { type: "line", x1: 0, y1: 0, x2: 480, y2: 0, lineWidth: 1 },
+              ],
+              margin: [40, 20, 40, 0],
+            },
+          ],
+        };
+
+    const content: unknown[] = [
+      titulo, // removida a moldura do título
+      moldura(reprintBanner),
+      moldura(infoTable),
       { text: "TESTES REALIZADOS", style: "subheader", margin: [0, 10, 0, 4] },
       { text: l.testesRealizados || "-", margin: [4, 0, 0, 8] },
       { text: "DIAGNÓSTICO", style: "subheader", margin: [0, 10, 0, 4] },
       { text: l.diagnostico || "-", margin: [4, 0, 0, 8] },
+      moldura([assinaturaHeader, assinaturaContent], [0, 10, 0, 0]),
     ];
 
-    // --- Assinatura ---
-    content.push({
-      text: "ASSINATURA DO TÉCNICO",
-      style: "subheader",
-      margin: [0, 10, 0, 4],
-    });
-
-    if (assinatura) {
-      content.push({
-        image: assinatura,
-        width: 160,
-        alignment: "center",
-        margin: [0, 5, 0, 5],
-      });
-    } else {
-      content.push(
-        { text: "Assine aqui:", margin: [4, 0, 0, 6] },
-        {
-          canvas: [
-            { type: "line", x1: 0, y1: 0, x2: 480, y2: 0, lineWidth: 1 },
-          ],
-          margin: [40, 20, 40, 0],
-        }
-      );
-    }
-
-    const docDefinition: any = {
-      info: { title: `Laudo Técnico - ${l.numeroChamado || "sem_chamado"}` },
+    const docDefinition: unknown = {
+      info: {
+        title: `Laudo Técnico - Reimpressão - ${
+          l.numeroChamado || "sem_chamado"
+        }`,
+        author: adminName,
+      },
       pageMargins: [40, 40, 40, 60],
       defaultStyle: { fontSize: 10, lineHeight: 1.3 },
       styles: {
         header: { fontSize: 18, bold: true, color: "#2c3e50" },
-        subheader: { fontSize: 12, bold: true, color: "#000" },
+        subheader: { fontSize: 12, bold: true, color: "#000000" },
       },
+      background: () => ({
+        text: "REIMPRESSÃO",
+        color: "#b91c1c",
+        opacity: 0.08,
+        bold: true,
+        fontSize: 60,
+        alignment: "center",
+        margin: [0, 300, 0, 0],
+      }),
       content,
     };
 
