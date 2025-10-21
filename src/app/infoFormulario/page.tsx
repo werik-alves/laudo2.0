@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import SignatureCanvas from "react-signature-canvas";
 import { LojaType } from "@/types/domain";
+import GlpiPasswordModal from "@/components/glpi-password-modal";
 // Tipos explícitos para evitar "any"
 type EstadoEquipamento = "funcionando" | "nao_funcionando" | "";
 type Necessidade = "substituido" | "enviar_conserto" | "descartado" | "";
@@ -246,16 +247,11 @@ export default function InfoFormularioPage() {
     }
   }
 
-  async function registrarFollowupNoGLPI() {
-    const baseUrl = API_BASE_URL || "http://localhost:4000";
-    const glpiPassword =
-      typeof window !== "undefined"
-        ? window.prompt(
-            "Informe sua senha GLPI/AD para registrar o acompanhamento no ticket:"
-          )
-        : "";
-    if (!glpiPassword) return;
+  const [isGlpiModalOpen, setIsGlpiModalOpen] = useState(false);
 
+  // Enviar acompanhamento ao GLPI (recebe a senha do modal)
+  async function registrarFollowupNoGLPI(glpiPwd: string) {
+    const baseUrl = API_BASE_URL || "http://localhost:4000";
     const equipamentoNome =
       equipamento ||
       equipamentos.find((eq) => eq.id === equipamentoId)?.nome ||
@@ -263,7 +259,7 @@ export default function InfoFormularioPage() {
 
     const payload = {
       numeroChamado: Number(numeroChamado),
-      glpiPassword,
+      glpiPassword: glpiPwd,
       laudo: {
         equipamento: equipamentoNome,
         modelo,
@@ -277,23 +273,44 @@ export default function InfoFormularioPage() {
       },
     };
 
-    await fetch(`${baseUrl}/glpi/followup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(payload),
-    }).catch((err) => console.error("Erro GLPI:", err));
+    try {
+      const resp = await fetch(`${baseUrl}/glpi/followup`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) {
+        const txt = await resp.text();
+        console.error("Falha ao enviar ao GLPI:", txt);
+      } else {
+        const json = await resp.json();
+        console.log("Followup GLPI criado:", json);
+      }
+    } catch (err) {
+      console.error("Erro ao integrar GLPI:", err);
+    }
   }
 
-  const handlePrint = async () => {
-    await saveLaudoNoBanco();
-    await registrarFollowupNoGLPI();
-    // Importa pdfmake dinamicamente
-    // @ts-ignore
-    const pdfMakeMod = await import("pdfmake/build/pdfmake");
-    // @ts-ignore
-    const pdfFontsMod = await import("pdfmake/build/vfs_fonts");
+  // Abrir/fechar modal e confirmar envio
+  const openGlpiModal = () => setIsGlpiModalOpen(true);
+  const closeGlpiModal = () => setIsGlpiModalOpen(false);
+  const confirmGlpiAndSend = async (pwd: string) => {
+    closeGlpiModal();
+    await registrarFollowupNoGLPI(pwd);
+  };
 
+  // Imprimir: apenas gerar o PDF (NÃO envia para GLPI e NÃO abre modal)
+  //=========================
+  // Função para imprimir o PDF e salvar no banco
+  //=========================
+  const handlePrint = async () => {
+    // Primeiro salva o laudo no banco
+    await saveLaudoNoBanco();
+
+    // Importa pdfmake dinamicamente
+    const pdfMakeMod = await import("pdfmake/build/pdfmake");
+    const pdfFontsMod = await import("pdfmake/build/vfs_fonts");
     const pdfMake = pdfMakeMod.default || pdfMakeMod;
     const pdfFonts = pdfFontsMod.default || pdfFontsMod;
     pdfMake.vfs = pdfFonts.pdfMake?.vfs || pdfFonts.vfs;
@@ -319,7 +336,6 @@ export default function InfoFormularioPage() {
         ? "Ser descartado"
         : "-";
 
-    // Converte imagem se existir
     let imagemEquipamentoDataUrl: string | undefined;
     if (imageFile) {
       try {
@@ -327,16 +343,12 @@ export default function InfoFormularioPage() {
       } catch {}
     }
 
-    // Assinatura
     const assinaturaDataUrlLocal =
       assinaturaDataUrl ||
       (sigPadRef.current && !sigPadRef.current.isEmpty()
         ? sigPadRef.current.getCanvas().toDataURL("image/png")
         : undefined);
 
-    // ===================================================
-    // Conteúdo do PDF
-    // ===================================================
     const content: unknown[] = [
       {
         text: "LAUDO TÉCNICO",
@@ -352,152 +364,65 @@ export default function InfoFormularioPage() {
               {
                 text: `Número do Chamado: ${numeroChamado || "-"}`,
                 bold: true,
-                fillColor: "#f2f2f2",
-                margin: [4, 4, 4, 4],
               },
             ],
-            [{ text: `Técnico: ${fullName || "-"}`, margin: [4, 2, 4, 2] }],
-            [{ text: `Data: ${dataAtual || "-"}`, margin: [4, 2, 4, 2] }],
-            [{ text: `Loja: ${loja || "-"}`, margin: [4, 2, 4, 2] }],
-            [{ text: `Setor: ${setor || "-"}`, margin: [4, 2, 4, 2] }],
+            [{ text: `Técnico: ${fullName || "-"}` }],
+            [{ text: `Data: ${dataAtual || "-"}` }],
+            [{ text: `Loja: ${loja || "-"}` }],
+            [{ text: `Setor: ${setor || "-"}` }],
             [
               {
-                text: `Equipamento: ${equipamentoNome || "-"} ${
-                  modeloNome || ""
-                }`,
-                margin: [4, 2, 4, 2],
+                text: `Equipamento: ${equipamentoNome} ${modeloNome}`,
               },
             ],
-            [{ text: `Tombo: ${tombo || "-"}`, margin: [4, 2, 4, 2] }],
-            [
-              {
-                text: `Estado do Equipamento: ${estadoLabel}`,
-                margin: [4, 2, 4, 2],
-              },
-            ],
-            [
-              {
-                text: `Necessidade: ${necessidadeLabel}`,
-                margin: [4, 2, 4, 2],
-              },
-            ],
+            [{ text: `Tombo: ${tombo || "-"}` }],
+            [{ text: `Estado do Equipamento: ${estadoLabel}` }],
+            [{ text: `Necessidade: ${necessidadeLabel}` }],
           ],
         },
-        layout: {
-          hLineWidth: () => 0.5,
-          vLineWidth: () => 0.5,
-          hLineColor: () => "#cccccc",
-          vLineColor: () => "#cccccc",
-          paddingLeft: () => 5,
-          paddingRight: () => 5,
-          paddingTop: () => 3,
-          paddingBottom: () => 3,
-        },
-        margin: [0, 0, 0, 15],
+        layout: "lightHorizontalLines",
+        margin: [0, 0, 0, 10],
       },
-
-      { text: "TESTES REALIZADOS", style: "subheader", margin: [0, 10, 0, 4] },
-      { text: testesRealizados || "-", margin: [4, 0, 0, 8] },
-
-      { text: "DIAGNÓSTICO", style: "subheader", margin: [0, 10, 0, 4] },
-      { text: diagnostico || "-", margin: [4, 0, 0, 8] },
+      { text: "TESTES REALIZADOS", style: "subheader" },
+      { text: testesRealizados || "-", margin: [0, 0, 0, 8] },
+      { text: "DIAGNÓSTICO", style: "subheader" },
+      { text: diagnostico || "-", margin: [0, 0, 0, 8] },
     ];
 
-    // Imagem do equipamento
     if (imagemEquipamentoDataUrl) {
-      content.push(
-        {
-          text: "Imagem do equipamento",
-          style: "subheader",
-          margin: [0, 12, 0, 4],
-        },
-        {
-          table: {
-            widths: ["*"],
-            body: [
-              [
-                {
-                  image: imagemEquipamentoDataUrl,
-                  fit: [220, 160], // mantém a proporção, menor que antes
-                  alignment: "center",
-                  margin: [6, 6, 6, 6], // espaço interno entre imagem e borda
-                },
-              ],
-            ],
-          },
-          layout: {
-            hLineWidth: function () {
-              return 1;
-            },
-            vLineWidth: function () {
-              return 1;
-            },
-            hLineColor: function () {
-              return "#d1d5db";
-            }, // cinza leve
-            vLineColor: function () {
-              return "#d1d5db";
-            },
-            paddingLeft: function () {
-              return 4;
-            },
-            paddingRight: function () {
-              return 4;
-            },
-            paddingTop: function () {
-              return 4;
-            },
-            paddingBottom: function () {
-              return 4;
-            },
-          },
-          margin: [0, 5, 0, 5], // margem externa da caixa
-        }
-      );
+      content.push({
+        text: "Imagem do equipamento",
+        style: "subheader",
+        margin: [0, 10, 0, 5],
+      });
+      content.push({
+        image: imagemEquipamentoDataUrl,
+        fit: [220, 160],
+        alignment: "center",
+        margin: [0, 0, 0, 10],
+      });
     }
 
-    // Assinatura do técnico
     if (assinaturaDataUrlLocal) {
-      content.push(
-        {
-          text: "ASSINATURA DO TÉCNICO",
-          style: "subheader",
-          margin: [0, 10, 0, 4],
-        },
-        {
-          table: {
-            widths: ["100%"],
-            body: [
-              [
-                {
-                  image: assinaturaDataUrlLocal,
-                  width: 160,
-                  alignment: "center",
-                  margin: [0, 5, 0, 5],
-                },
-              ],
-            ],
-          },
-          layout: {
-            hLineWidth: () => 0.5,
-            vLineWidth: () => 0.5,
-            hLineColor: () => "#cccccc",
-            vLineColor: () => "#cccccc",
-          },
-        }
-      );
+      content.push({
+        text: "Assinatura do Técnico",
+        style: "subheader",
+        margin: [0, 10, 0, 5],
+      });
+      content.push({
+        image: assinaturaDataUrlLocal,
+        width: 150,
+        alignment: "center",
+      });
     }
 
-    // ===================================================
-    // Configuração do PDF
-    // ===================================================
-    const docDefinition: unknown = {
+    const docDefinition = {
       info: {
         title: `Laudo Técnico - ${numeroChamado || "sem_chamado"}`,
         author: fullName || "Técnico",
       },
       pageMargins: [40, 40, 40, 60],
-      defaultStyle: { fontSize: 10, lineHeight: 1.3 },
+      defaultStyle: { fontSize: 10 },
       styles: {
         header: { fontSize: 18, bold: true, color: "#2c3e50" },
         subheader: { fontSize: 12, bold: true, color: "#000000" },
@@ -757,18 +682,30 @@ export default function InfoFormularioPage() {
         </div>
       </CardContent>
 
-      <CardFooter className="flex justify-between gap-2">
+      <CardFooter className="flex justify-end gap-2">
         <Button
           type="button"
+          className="bg-[#4288a8] text-white"
           onClick={async () => {
             handlePrint();
           }}
         >
           Imprimir
         </Button>
+
+        <Button type="button" onClick={openGlpiModal}>
+          Enviar para o GLPI
+        </Button>
+
+        <GlpiPasswordModal
+          open={isGlpiModalOpen}
+          onCancel={closeGlpiModal}
+          onConfirm={confirmGlpiAndSend}
+          // opcional: title="Enviar para GLPI" description="Informe sua senha GLPI/AD para registrar o acompanhamento no ticket."
+        />
+
         <Button
           type="button"
-          variant="outline"
           onClick={async () => {
             const baseUrl = API_BASE_URL || "http://localhost:4000";
             try {
