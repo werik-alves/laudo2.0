@@ -139,6 +139,25 @@ export default function AdminLaudosGeradosPage() {
 
   // Habilita impressão do laudo (PDF) usando pdfmake, igual ao InfoFormulário
   async function imprimirLaudo(l: InfoLaudo) {
+    // Identificação de quem está reimprimindo (painel admin)
+    const adminName =
+      typeof window !== "undefined"
+        ? localStorage.getItem("fullName") ||
+          localStorage.getItem("username") ||
+          "Administrador"
+        : "Administrador";
+
+    const nowBr = () => {
+      const d = new Date();
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const yyyy = d.getFullYear();
+      const HH = String(d.getHours()).padStart(2, "0");
+      const MM = String(d.getMinutes()).padStart(2, "0");
+      return `${dd}/${mm}/${yyyy} ${HH}:${MM}`;
+    };
+
+    // Importa pdfmake
     // @ts-ignore
     const pdfMakeMod = await import("pdfmake/build/pdfmake");
     // @ts-ignore
@@ -168,6 +187,37 @@ export default function AdminLaudosGeradosPage() {
         ? `${l.equipamento} - ${l.modelo}`
         : l.equipamento;
 
+    const reprintBanner = {
+      table: {
+        widths: ["*"],
+        body: [
+          [
+            {
+              text: "REIMPRESSÃO — Painel Administrativo",
+              bold: true,
+              color: "#b91c1c",
+              alignment: "center",
+              margin: [4, 6, 4, 2],
+            },
+          ],
+          [
+            {
+              text: `Emitido por: ${adminName} em ${nowBr()}`,
+              alignment: "center",
+              margin: [4, 0, 4, 6],
+            },
+          ],
+        ],
+      },
+      layout: {
+        hLineWidth: () => 0.5,
+        vLineWidth: () => 0.5,
+        hLineColor: () => "#e5e7eb",
+        vLineColor: () => "#e5e7eb",
+      },
+      margin: [0, 0, 0, 10],
+    };
+
     const content: unknown[] = [
       {
         text: "LAUDO TÉCNICO",
@@ -175,6 +225,7 @@ export default function AdminLaudosGeradosPage() {
         alignment: "center",
         margin: [0, 0, 0, 15],
       },
+      reprintBanner,
       {
         table: {
           widths: ["100%"],
@@ -237,8 +288,10 @@ export default function AdminLaudosGeradosPage() {
 
     const docDefinition: unknown = {
       info: {
-        title: `Laudo Técnico - ${l.numeroChamado || "sem_chamado"}`,
-        author: l.tecnico || l.createdByUsername || "Técnico",
+        title: `Laudo Técnico - Reimpressão - ${
+          l.numeroChamado || "sem_chamado"
+        }`,
+        author: adminName,
       },
       pageMargins: [40, 40, 40, 60],
       defaultStyle: { fontSize: 10, lineHeight: 1.3 },
@@ -246,6 +299,15 @@ export default function AdminLaudosGeradosPage() {
         header: { fontSize: 18, bold: true, color: "#2c3e50" },
         subheader: { fontSize: 12, bold: true, color: "#000000" },
       },
+      background: () => ({
+        text: "REIMPRESSÃO",
+        color: "#b91c1c",
+        opacity: 0.08,
+        bold: true,
+        fontSize: 60,
+        alignment: "center",
+        margin: [0, 300, 0, 0],
+      }),
       content,
     };
 
