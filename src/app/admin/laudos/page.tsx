@@ -137,6 +137,121 @@ export default function AdminLaudosGeradosPage() {
     }
   };
 
+  // Habilita impressão do laudo (PDF) usando pdfmake, igual ao InfoFormulário
+  async function imprimirLaudo(l: InfoLaudo) {
+    // @ts-ignore
+    const pdfMakeMod = await import("pdfmake/build/pdfmake");
+    // @ts-ignore
+    const pdfFontsMod = await import("pdfmake/build/vfs_fonts");
+    const pdfMake = pdfMakeMod.default || pdfMakeMod;
+    const pdfFonts = pdfFontsMod.default || pdfFontsMod;
+    pdfMake.vfs = pdfFonts.pdfMake?.vfs || pdfFonts.vfs;
+
+    const estadoLabel =
+      l.estadoEquipamento === "FUNCIONANDO"
+        ? "Funcionando"
+        : l.estadoEquipamento === "NAO_FUNCIONANDO"
+        ? "Não funcionando"
+        : "-";
+
+    const necessidadeLabel =
+      l.necessidade === "SUBSTITUIDO"
+        ? "Ser substituído"
+        : l.necessidade === "ENVIAR_CONSERTO"
+        ? "Enviado p/ conserto"
+        : l.necessidade === "DESCARTADO"
+        ? "Ser descartado"
+        : "-";
+
+    const equipamentoModelo =
+      l.modelo && l.modelo.trim()
+        ? `${l.equipamento} - ${l.modelo}`
+        : l.equipamento;
+
+    const content: unknown[] = [
+      {
+        text: "LAUDO TÉCNICO",
+        style: "header",
+        alignment: "center",
+        margin: [0, 0, 0, 15],
+      },
+      {
+        table: {
+          widths: ["100%"],
+          body: [
+            [
+              {
+                text: `Número do Chamado: ${l.numeroChamado || "-"}`,
+                bold: true,
+                fillColor: "#f2f2f2",
+                margin: [4, 4, 4, 4],
+              },
+            ],
+            [
+              {
+                text: `Técnico: ${l.tecnico || l.createdByUsername || "-"}`,
+                margin: [4, 2, 4, 2],
+              },
+            ],
+            [{ text: `Data: ${l.data || "-"}`, margin: [4, 2, 4, 2] }],
+            [{ text: `Loja: ${l.loja || "-"}`, margin: [4, 2, 4, 2] }],
+            [{ text: `Setor: ${l.setor || "-"}`, margin: [4, 2, 4, 2] }],
+            [
+              {
+                text: `Equipamento: ${equipamentoModelo || "-"}`,
+                margin: [4, 2, 4, 2],
+              },
+            ],
+            [{ text: `Tombo: ${l.tombo || "-"}`, margin: [4, 2, 4, 2] }],
+            [
+              {
+                text: `Estado do Equipamento: ${estadoLabel}`,
+                margin: [4, 2, 4, 2],
+              },
+            ],
+            [
+              {
+                text: `Necessidade: ${necessidadeLabel}`,
+                margin: [4, 2, 4, 2],
+              },
+            ],
+          ],
+        },
+        layout: {
+          hLineWidth: () => 0.5,
+          vLineWidth: () => 0.5,
+          hLineColor: () => "#cccccc",
+          vLineColor: () => "#cccccc",
+          paddingLeft: () => 5,
+          paddingRight: () => 5,
+          paddingTop: () => 3,
+          paddingBottom: () => 3,
+        },
+        margin: [0, 0, 0, 15],
+      },
+      { text: "TESTES REALIZADOS", style: "subheader", margin: [0, 10, 0, 4] },
+      { text: l.testesRealizados || "-", margin: [4, 0, 0, 8] },
+      { text: "DIAGNÓSTICO", style: "subheader", margin: [0, 10, 0, 4] },
+      { text: l.diagnostico || "-", margin: [4, 0, 0, 8] },
+    ];
+
+    const docDefinition: unknown = {
+      info: {
+        title: `Laudo Técnico - ${l.numeroChamado || "sem_chamado"}`,
+        author: l.tecnico || l.createdByUsername || "Técnico",
+      },
+      pageMargins: [40, 40, 40, 60],
+      defaultStyle: { fontSize: 10, lineHeight: 1.3 },
+      styles: {
+        header: { fontSize: 18, bold: true, color: "#2c3e50" },
+        subheader: { fontSize: 12, bold: true, color: "#000000" },
+      },
+      content,
+    };
+
+    pdfMake.createPdf(docDefinition).open();
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -230,13 +345,10 @@ export default function AdminLaudosGeradosPage() {
                 <span>Data: {l.data}</span>
               </div>
               <div className="flex items-center gap-2 justify-end">
-                <Button disabled title="Em breve">
-                  Imprimir
-                </Button>
+                <Button onClick={() => imprimirLaudo(l)}>Imprimir</Button>
                 <Button variant="ghost" onClick={() => excluirLaudo(l.id)}>
                   Excluir
                 </Button>
-                {/* Checkbox para seleção */}
                 <input
                   type="checkbox"
                   checked={selectedIds.has(l.id)}
