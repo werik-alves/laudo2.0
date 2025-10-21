@@ -305,7 +305,7 @@ export default function InfoFormularioPage() {
   // Função para imprimir o PDF e salvar no banco
   //=========================
   const handlePrint = async () => {
-    // Primeiro salva o laudo no banco
+    // Primeiro salva o laudo no banco (mantido conforme sua lógica atual)
     await saveLaudoNoBanco();
 
     // Importa pdfmake dinamicamente
@@ -349,72 +349,182 @@ export default function InfoFormularioPage() {
         ? sigPadRef.current.getCanvas().toDataURL("image/png")
         : undefined);
 
-    const content: unknown[] = [
-      {
-        text: "LAUDO TÉCNICO",
-        style: "header",
-        alignment: "center",
-        margin: [0, 0, 0, 15],
+    // Helper de moldura idêntico ao admin (borda mais marcada e padding)
+
+    const moldura = (conteudo: any, margin: number[] = [0, 0, 0, 10]) => ({
+      table: {
+        widths: ["*"],
+        body: [[{ stack: Array.isArray(conteudo) ? conteudo : [conteudo] }]],
       },
-      {
-        table: {
-          widths: ["100%"],
-          body: [
-            [
-              {
-                text: `Número do Chamado: ${numeroChamado || "-"}`,
-                bold: true,
-              },
-            ],
-            [{ text: `Técnico: ${fullName || "-"}` }],
-            [{ text: `Data: ${dataAtual || "-"}` }],
-            [{ text: `Loja: ${loja || "-"}` }],
-            [{ text: `Setor: ${setor || "-"}` }],
-            [
-              {
-                text: `Equipamento: ${equipamentoNome} ${modeloNome}`,
-              },
-            ],
-            [{ text: `Tombo: ${tombo || "-"}` }],
-            [{ text: `Estado do Equipamento: ${estadoLabel}` }],
-            [{ text: `Necessidade: ${necessidadeLabel}` }],
+      layout: {
+        hLineWidth: () => 1,
+        vLineWidth: () => 1,
+        hLineColor: () => "#d1d5db",
+        vLineColor: () => "#d1d5db",
+        paddingLeft: () => 8,
+        paddingRight: () => 8,
+        paddingTop: () => 8,
+        paddingBottom: () => 8,
+      },
+      margin,
+    });
+
+    const titulo = {
+      text: "LAUDO TÉCNICO",
+      style: "header",
+      alignment: "center",
+      margin: [0, 0, 0, 10], // sem moldura, igual ao admin
+    };
+
+    // Banner de emissão (apenas layout do admin, sem “REIMPRESSÃO”)
+    const emissaoBanner = {
+      table: {
+        widths: ["*"],
+        body: [
+          [
+            {
+              text: `Emitido por: ${fullName || "Técnico"} em ${
+                dataAtual || "-"
+              }`,
+              alignment: "center",
+              margin: [4, 6, 4, 6],
+            },
           ],
-        },
-        layout: "lightHorizontalLines",
-        margin: [0, 0, 0, 10],
+        ],
       },
-      { text: "TESTES REALIZADOS", style: "subheader" },
-      { text: testesRealizados || "-", margin: [0, 0, 0, 8] },
-      { text: "DIAGNÓSTICO", style: "subheader" },
-      { text: diagnostico || "-", margin: [0, 0, 0, 8] },
+      layout: {
+        hLineWidth: () => 0.5,
+        vLineWidth: () => 0.5,
+        hLineColor: () => "#e5e7eb",
+        vLineColor: () => "#e5e7eb",
+      },
+      margin: [0, 0, 0, 0],
+    };
+
+    // Bloco de informações com layout idêntico ao admin
+    const infoTable = {
+      table: {
+        widths: ["100%"],
+        body: [
+          [
+            {
+              text: `Número do Chamado: ${numeroChamado || "-"}`,
+              bold: true,
+              fillColor: "#f2f2f2",
+              margin: [4, 4, 4, 4],
+            },
+          ],
+          [{ text: `Técnico: ${fullName || "-"}`, margin: [4, 2, 4, 2] }],
+          [{ text: `Data: ${dataAtual || "-"}`, margin: [4, 2, 4, 2] }],
+          [{ text: `Loja: ${loja || "-"}`, margin: [4, 2, 4, 2] }],
+          [{ text: `Setor: ${setor || "-"}`, margin: [4, 2, 4, 2] }],
+          [
+            {
+              text: `Equipamento: ${
+                modeloNome.trim()
+                  ? `${equipamentoNome || "-"} - ${modeloNome}`
+                  : equipamentoNome || "-"
+              }`,
+              margin: [4, 2, 4, 2],
+            },
+          ],
+          [{ text: `Tombo: ${tombo || "-"}`, margin: [4, 2, 4, 2] }],
+          [
+            {
+              text: `Estado do Equipamento: ${estadoLabel}`,
+              margin: [4, 2, 4, 2],
+            },
+          ],
+          [{ text: `Necessidade: ${necessidadeLabel}`, margin: [4, 2, 4, 2] }],
+        ],
+      },
+      layout: {
+        hLineWidth: () => 0.5,
+        vLineWidth: () => 0.5,
+        hLineColor: () => "#cccccc",
+        vLineColor: () => "#cccccc",
+        paddingLeft: () => 5,
+        paddingRight: () => 5,
+        paddingTop: () => 3,
+        paddingBottom: () => 3,
+      },
+      margin: [0, 0, 0, 0],
+    };
+
+    const assinaturaHeader = {
+      text: "ASSINATURA DO TÉCNICO",
+      style: "subheader",
+      margin: [0, 0, 0, 8],
+    };
+
+    const assinaturaContent = assinaturaDataUrlLocal
+      ? {
+          table: {
+            widths: ["100%"],
+            body: [
+              [
+                {
+                  image: assinaturaDataUrlLocal,
+                  width: 160,
+                  alignment: "center",
+                  margin: [0, 5, 0, 5],
+                },
+              ],
+            ],
+          },
+          layout: {
+            hLineWidth: () => 0.5,
+            vLineWidth: () => 0.5,
+            hLineColor: () => "#cccccc",
+            vLineColor: () => "#cccccc",
+          },
+        }
+      : {
+          stack: [
+            { text: "Assine aqui:", margin: [4, 0, 0, 6] },
+            {
+              canvas: [
+                { type: "line", x1: 0, y1: 0, x2: 480, y2: 0, lineWidth: 1 },
+              ],
+              margin: [40, 20, 40, 0],
+            },
+          ],
+        };
+
+    const content: unknown[] = [
+      titulo,
+      moldura(emissaoBanner),
+      moldura(infoTable),
+      { text: "TESTES REALIZADOS", style: "subheader", margin: [0, 10, 0, 4] },
+      { text: testesRealizados || "-", margin: [4, 0, 0, 8] },
+      { text: "DIAGNÓSTICO", style: "subheader", margin: [0, 10, 0, 4] },
+      { text: diagnostico || "-", margin: [4, 0, 0, 8] },
     ];
 
+    // Imagem do equipamento com moldura (mantida e alinhada ao layout)
     if (imagemEquipamentoDataUrl) {
-      content.push({
-        text: "Imagem do equipamento",
-        style: "subheader",
-        margin: [0, 10, 0, 5],
-      });
-      content.push({
-        image: imagemEquipamentoDataUrl,
-        fit: [220, 160],
-        alignment: "center",
-        margin: [0, 0, 0, 10],
-      });
+      content.push(
+        moldura(
+          [
+            {
+              text: "IMAGEM DO EQUIPAMENTO",
+              style: "subheader",
+              margin: [0, 0, 0, 5],
+            },
+            {
+              image: imagemEquipamentoDataUrl,
+              fit: [220, 160],
+              alignment: "center",
+              margin: [0, 5, 0, 5],
+            },
+          ],
+          [0, 10, 0, 0]
+        )
+      );
     }
 
-    if (assinaturaDataUrlLocal) {
-      content.push({
-        text: "Assinatura do Técnico",
-        style: "subheader",
-        margin: [0, 10, 0, 5],
-      });
-      content.push({
-        image: assinaturaDataUrlLocal,
-        width: 150,
-        alignment: "center",
-      });
-    }
+    // Assinatura com moldura (sempre espelha o admin)
+    content.push(moldura([assinaturaHeader, assinaturaContent], [0, 10, 0, 0]));
 
     const docDefinition = {
       info: {
@@ -422,7 +532,7 @@ export default function InfoFormularioPage() {
         author: fullName || "Técnico",
       },
       pageMargins: [40, 40, 40, 60],
-      defaultStyle: { fontSize: 10 },
+      defaultStyle: { fontSize: 10, lineHeight: 1.3 },
       styles: {
         header: { fontSize: 18, bold: true, color: "#2c3e50" },
         subheader: { fontSize: 12, bold: true, color: "#000000" },
