@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import SignatureCanvas from "react-signature-canvas";
 import type { InfoLaudo } from "@/types/domain";
 
 export default function AdminLaudosGeradosPage() {
@@ -18,6 +19,47 @@ export default function AdminLaudosGeradosPage() {
   const [dataFim, setDataFim] = useState("");
   const [tombo, setTombo] = useState("");
 
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+
+  // --- NOVOS ESTADOS PARA ASSINATURA ---
+  const [isSignatureOpen, setIsSignatureOpen] = useState(false);
+  const [laudoToPrint, setLaudoToPrint] = useState<InfoLaudo | null>(null);
+  const sigPadRef = useRef<SignatureCanvas>(null);
+  const [signatureDataUrl, setSignatureDataUrl] = useState<string | null>(null);
+
+  // --- Funções da assinatura ---
+  function openSignatureAndPrint(l: InfoLaudo) {
+    setLaudoToPrint(l);
+    setSignatureDataUrl(null);
+    setIsSignatureOpen(true);
+  }
+
+  function clearSignatureCanvas() {
+    const pad = sigPadRef.current;
+    if (pad) pad.clear();
+    setSignatureDataUrl(null);
+  }
+
+  function confirmSignatureAndPrint() {
+    const pad = sigPadRef.current;
+    let dataUrl = signatureDataUrl;
+    if (pad && !pad.isEmpty()) {
+      dataUrl = pad.getCanvas().toDataURL("image/png");
+    }
+    if (laudoToPrint) {
+      imprimirLaudo(laudoToPrint, dataUrl || undefined);
+    }
+    setIsSignatureOpen(false);
+    setLaudoToPrint(null);
+  }
+
+  function printWithoutSignature() {
+    if (laudoToPrint) imprimirLaudo(laudoToPrint, undefined);
+    setIsSignatureOpen(false);
+    setLaudoToPrint(null);
+  }
+
+  // --- Função de exclusão ---
   async function excluirLaudo(id: number) {
     try {
       const token =
@@ -32,8 +74,6 @@ export default function AdminLaudosGeradosPage() {
       if (res.status === 204 || res.status === 200) {
         setLaudos((prev) => prev.filter((x) => x.id !== id));
       } else {
-        const msg = await res.text();
-        console.error(`Falha ao excluir: ${res.status} ${msg}`);
         alert("Falha ao excluir o laudo.");
       }
     } catch (err) {
@@ -42,25 +82,16 @@ export default function AdminLaudosGeradosPage() {
     }
   }
 
-  // Converte 'YYYY-MM-DD' para 'DD/MM/YYYY' para bater com o que está salvo no banco
-  function toBrDate(isoDate: string) {
-    const [y, m, d] = isoDate.split("-");
-    if (!y || !m || !d) return isoDate;
-    return `${d}/${m}/${y}`;
-  }
-
+  // --- Carrega laudos ---
   const load = async () => {
     try {
       const token =
         typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const url = new URL(`${API_BASE_URL}/info-laudos`);
-
       if (tecnico.trim()) url.searchParams.set("tecnico", tecnico.trim());
       if (numeroChamado.trim())
         url.searchParams.set("numeroChamado", numeroChamado.trim());
       if (tombo.trim()) url.searchParams.set("tombo", tombo.trim());
-
-      // intervalo de datas: YYYY-MM-DD
       if (dataInicio.trim())
         url.searchParams.set("dataInicio", dataInicio.trim());
       if (dataFim.trim()) url.searchParams.set("dataFim", dataFim.trim());
@@ -73,7 +104,6 @@ export default function AdminLaudosGeradosPage() {
         credentials: "include",
       });
       if (!res.ok) {
-        console.error("Falha ao carregar laudos:", res.status);
         setLaudos([]);
         return;
       }
@@ -89,8 +119,7 @@ export default function AdminLaudosGeradosPage() {
     load();
   }, []);
 
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-
+  // --- Seleção de laudos ---
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -137,9 +166,8 @@ export default function AdminLaudosGeradosPage() {
     }
   };
 
-  // Habilita impressão do laudo (PDF) usando pdfmake, igual ao InfoFormulário
-  async function imprimirLaudo(l: InfoLaudo) {
-    // Identificação de quem está reimprimindo (painel admin)
+  // --- Função para imprimir com ou sem assinatura ---
+  async function imprimirLaudo(l: InfoLaudo, assinatura?: string) {
     const adminName =
       typeof window !== "undefined"
         ? localStorage.getItem("fullName") ||
@@ -157,7 +185,6 @@ export default function AdminLaudosGeradosPage() {
       return `${dd}/${mm}/${yyyy} ${HH}:${MM}`;
     };
 
-    // Importa pdfmake
     // @ts-ignore
     const pdfMakeMod = await import("pdfmake/build/pdfmake");
     // @ts-ignore
@@ -218,7 +245,7 @@ export default function AdminLaudosGeradosPage() {
       margin: [0, 0, 0, 10],
     };
 
-    const content: unknown[] = [
+    const content: any[] = [
       {
         text: "LAUDO TÉCNICO",
         style: "header",
@@ -234,50 +261,19 @@ export default function AdminLaudosGeradosPage() {
               {
                 text: `Número do Chamado: ${l.numeroChamado || "-"}`,
                 bold: true,
-                fillColor: "#f2f2f2",
-                margin: [4, 4, 4, 4],
               },
             ],
-            [
-              {
-                text: `Técnico: ${l.tecnico || l.createdByUsername || "-"}`,
-                margin: [4, 2, 4, 2],
-              },
-            ],
-            [{ text: `Data: ${l.data || "-"}`, margin: [4, 2, 4, 2] }],
-            [{ text: `Loja: ${l.loja || "-"}`, margin: [4, 2, 4, 2] }],
-            [{ text: `Setor: ${l.setor || "-"}`, margin: [4, 2, 4, 2] }],
-            [
-              {
-                text: `Equipamento: ${equipamentoModelo || "-"}`,
-                margin: [4, 2, 4, 2],
-              },
-            ],
-            [{ text: `Tombo: ${l.tombo || "-"}`, margin: [4, 2, 4, 2] }],
-            [
-              {
-                text: `Estado do Equipamento: ${estadoLabel}`,
-                margin: [4, 2, 4, 2],
-              },
-            ],
-            [
-              {
-                text: `Necessidade: ${necessidadeLabel}`,
-                margin: [4, 2, 4, 2],
-              },
-            ],
+            [{ text: `Técnico: ${l.tecnico || "-"}` }],
+            [{ text: `Data: ${l.data || "-"}` }],
+            [{ text: `Loja: ${l.loja || "-"}` }],
+            [{ text: `Setor: ${l.setor || "-"}` }],
+            [{ text: `Equipamento: ${equipamentoModelo || "-"}` }],
+            [{ text: `Tombo: ${l.tombo || "-"}` }],
+            [{ text: `Estado do Equipamento: ${estadoLabel}` }],
+            [{ text: `Necessidade: ${necessidadeLabel}` }],
           ],
         },
-        layout: {
-          hLineWidth: () => 0.5,
-          vLineWidth: () => 0.5,
-          hLineColor: () => "#cccccc",
-          vLineColor: () => "#cccccc",
-          paddingLeft: () => 5,
-          paddingRight: () => 5,
-          paddingTop: () => 3,
-          paddingBottom: () => 3,
-        },
+        layout: "lightHorizontalLines",
         margin: [0, 0, 0, 15],
       },
       { text: "TESTES REALIZADOS", style: "subheader", margin: [0, 10, 0, 4] },
@@ -286,70 +282,111 @@ export default function AdminLaudosGeradosPage() {
       { text: l.diagnostico || "-", margin: [4, 0, 0, 8] },
     ];
 
-    const docDefinition: unknown = {
-      info: {
-        title: `Laudo Técnico - Reimpressão - ${
-          l.numeroChamado || "sem_chamado"
-        }`,
-        author: adminName,
-      },
+    // --- Assinatura ---
+    content.push({
+      text: "ASSINATURA DO TÉCNICO",
+      style: "subheader",
+      margin: [0, 10, 0, 4],
+    });
+
+    if (assinatura) {
+      content.push({
+        image: assinatura,
+        width: 160,
+        alignment: "center",
+        margin: [0, 5, 0, 5],
+      });
+    } else {
+      content.push(
+        { text: "Assine aqui:", margin: [4, 0, 0, 6] },
+        {
+          canvas: [
+            { type: "line", x1: 0, y1: 0, x2: 480, y2: 0, lineWidth: 1 },
+          ],
+          margin: [40, 20, 40, 0],
+        }
+      );
+    }
+
+    const docDefinition: any = {
+      info: { title: `Laudo Técnico - ${l.numeroChamado || "sem_chamado"}` },
       pageMargins: [40, 40, 40, 60],
       defaultStyle: { fontSize: 10, lineHeight: 1.3 },
       styles: {
         header: { fontSize: 18, bold: true, color: "#2c3e50" },
-        subheader: { fontSize: 12, bold: true, color: "#000000" },
+        subheader: { fontSize: 12, bold: true, color: "#000" },
       },
-      background: () => ({
-        text: "REIMPRESSÃO",
-        color: "#b91c1c",
-        opacity: 0.08,
-        bold: true,
-        fontSize: 60,
-        alignment: "center",
-        margin: [0, 300, 0, 0],
-      }),
       content,
     };
 
     pdfMake.createPdf(docDefinition).open();
   }
 
+  // --- Renderização ---
   return (
     <Card>
       <CardHeader>
         <CardTitle>Laudos Gerados</CardTitle>
       </CardHeader>
+
       <CardContent className="grid gap-4">
-        {/* Linha de ações: Pesquisar + seleção/exclusão em lote */}
+        {/* --- Modal de Assinatura --- */}
+        {isSignatureOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white rounded-md p-4 w-full max-w-lg">
+              <h3 className="text-lg font-semibold mb-2">Assinatura</h3>
+              <div className="rounded-md border bg-white p-2">
+                <SignatureCanvas
+                  ref={sigPadRef}
+                  penColor="#000000"
+                  backgroundColor="#ffffff"
+                  canvasProps={{ className: "w-full h-40 border rounded" }}
+                />
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Button variant="outline" onClick={clearSignatureCanvas}>
+                  Limpar
+                </Button>
+                <Button onClick={confirmSignatureAndPrint}>
+                  Usar assinatura e imprimir
+                </Button>
+                <Button variant="ghost" onClick={printWithoutSignature}>
+                  Imprimir sem assinatura
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsSignatureOpen(false);
+                    setLaudoToPrint(null);
+                  }}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- Filtros e Ações --- */}
         <div className="flex flex-wrap gap-2">
           <Button onClick={load}>Pesquisar</Button>
-          <Button
-            variant="outline"
-            onClick={selectAll}
-            className="cursor-pointer"
-          >
+          <Button variant="outline" onClick={selectAll}>
             Marcar todos
           </Button>
-          <Button
-            variant="outline"
-            onClick={clearSelection}
-            className="cursor-pointer"
-          >
+          <Button variant="outline" onClick={clearSelection}>
             Desmarcar
           </Button>
           <Button
             variant="outline"
             onClick={excluirSelecionados}
             disabled={selectedIds.size === 0}
-            className="cursor-pointer"
           >
             Excluir selecionados
           </Button>
         </div>
 
-        {/* Duas colunas lado a lado */}
+        {/* --- Filtros --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Coluna esquerda: Técnico e Número do Chamado */}
           <div className="grid gap-2">
             <Label>Técnico</Label>
             <Input
@@ -365,7 +402,6 @@ export default function AdminLaudosGeradosPage() {
             />
           </div>
 
-          {/* Coluna direita: Data Inicial, Data Final e Tombo */}
           <div className="grid gap-2">
             <Label>Data Inicial</Label>
             <Input
@@ -388,7 +424,7 @@ export default function AdminLaudosGeradosPage() {
           </div>
         </div>
 
-        {/* Lista de laudos */}
+        {/* --- Lista de laudos --- */}
         <div className="grid gap-3">
           {laudos.map((l) => (
             <div key={l.id} className="rounded-md border p-4 space-y-2">
@@ -406,8 +442,11 @@ export default function AdminLaudosGeradosPage() {
                 <span>Tombo: {l.tombo}</span>
                 <span>Data: {l.data}</span>
               </div>
+
               <div className="flex items-center gap-2 justify-end">
-                <Button onClick={() => imprimirLaudo(l)}>Imprimir</Button>
+                <Button onClick={() => openSignatureAndPrint(l)}>
+                  Imprimir
+                </Button>
                 <Button variant="ghost" onClick={() => excluirLaudo(l.id)}>
                   Excluir
                 </Button>
