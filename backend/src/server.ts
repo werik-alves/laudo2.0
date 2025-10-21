@@ -8,6 +8,7 @@ import lojasRouter from "./routes/lojas";
 import setoresRouter from "./routes/setor";
 import cookieParser from "cookie-parser";
 import infoLaudosRouter from "./routes/infoLaudos";
+import glpiRouter from "./routes/glpi"; // novo
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
@@ -39,6 +40,7 @@ app.use("/setores", setoresRouter);
 app.use("/equipamentos", equipamentosRouter);
 app.use("/modelos", modelosRouter);
 app.use("/info-laudos", infoLaudosRouter);
+app.use("/glpi", glpiRouter); // registra rota GLPI
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });

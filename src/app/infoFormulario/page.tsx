@@ -246,8 +246,48 @@ export default function InfoFormularioPage() {
     }
   }
 
+  async function registrarFollowupNoGLPI() {
+    const baseUrl = API_BASE_URL || "http://localhost:4000";
+    const glpiPassword =
+      typeof window !== "undefined"
+        ? window.prompt(
+            "Informe sua senha GLPI/AD para registrar o acompanhamento no ticket:"
+          )
+        : "";
+    if (!glpiPassword) return;
+
+    const equipamentoNome =
+      equipamento ||
+      equipamentos.find((eq) => eq.id === equipamentoId)?.nome ||
+      "";
+
+    const payload = {
+      numeroChamado: Number(numeroChamado),
+      glpiPassword,
+      laudo: {
+        equipamento: equipamentoNome,
+        modelo,
+        tombo,
+        setor,
+        loja,
+        testesRealizados,
+        diagnostico,
+        estadoEquipamento,
+        necessidade,
+      },
+    };
+
+    await fetch(`${baseUrl}/glpi/followup`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    }).catch((err) => console.error("Erro GLPI:", err));
+  }
+
   const handlePrint = async () => {
     await saveLaudoNoBanco();
+    await registrarFollowupNoGLPI();
     // Importa pdfmake dinamicamente
     // @ts-ignore
     const pdfMakeMod = await import("pdfmake/build/pdfmake");

@@ -1,0 +1,122 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const GLPI_BASE_URL =
+  process.env.GLPI_BASE_URL ||
+  "http://suporte.cometasupermercados.com.br/apirest.php";
+const GLPI_APP_TOKEN =
+  process.env.GLPI_APP_TOKEN || "90MIxmLN3yzkpMpPUJIRPrGwGqa3YVwqiEW2Fraf";
+
+function escapeHtml(str: string | null | undefined): string {
+  const s = String(str ?? "").trim();
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+export type LaudoInfoForGlpi = {
+  equipamento?: string | null;
+  modelo?: string | null;
+  tombo?: string | null;
+  setor?: string | null;
+  loja?: string | null;
+  testesRealizados?: string | null;
+  diagnostico?: string | null;
+  estadoEquipamento?: string | null;
+  necessidade?: string | null;
+};
+
+function buildFollowupHtml(info: LaudoInfoForGlpi): string {
+  const estado =
+    info.estadoEquipamento === "funcionando"
+      ? "Funcionando"
+      : info.estadoEquipamento === "nao_funcionando"
+      ? "Não funcionando"
+      : escapeHtml(info.estadoEquipamento);
+
+  const necessidade =
+    info.necessidade === "substituido"
+      ? "Ser substituído"
+      : info.necessidade === "enviar_conserto"
+      ? "Enviar para conserto"
+      : info.necessidade === "descartado"
+      ? "Descartado"
+      : escapeHtml(info.necessidade);
+
+  return (
+    `<h3>* Informações do Laudo Técnico *</h3>` +
+    `<p>` +
+    `<br>Equipamento: ${escapeHtml(info.equipamento)}` +
+    `<br><br>Modelo: ${escapeHtml(info.modelo)}` +
+    `<br><br>Tombo: ${escapeHtml(info.tombo)}` +
+    `<br><br>Setor: ${escapeHtml(info.setor)}` +
+    `<br><br>Loja: ${escapeHtml(info.loja)}` +
+    `<br><br>Testes Realizados: ${escapeHtml(info.testesRealizados)}` +
+    `<br><br>Diagnóstico do equipamento: ${escapeHtml(info.diagnostico)}` +
+    `<br><br>Estado do Equipamento: ${estado}` +
+    `<br><br>Equipamento necessita: ${necessidade}` +
+    `<br><br>OBS: Laudo entregue ao administrador(a) da loja.` +
+    `</p>`
+  );
+}
+
+async function initSession(login: string, password: string): Promise<string> {
+  const url = `${GLPI_BASE_URL}/initSession`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "App-Token": GLPI_APP_TOKEN,
+    },
+    body: JSON.stringify({ login, password }),
+  });
+
+  if (!resp.ok) {
+    const body = await resp.text();
+    throw new Error(
+      `Falha ao autenticar no GLPI (${resp.status}): ${body || resp.statusText}`
+    );
+  }
+
+  const json = (await resp.json()) as { session_token?: string };
+  if (!json.session_token)
+    throw new Error("Session token não retornado pelo GLPI");
+  return json.session_token;
+}
+
+export async function createTicketFollowup(
+  username: string,
+  password: string,
+  tickets_id: number,
+  info: LaudoInfoForGlpi
+): Promise<{ id?: number; raw: any }> {
+  const sessionToken = await initSession(username, password);
+
+  const contentHtml = buildFollowupHtml(info);
+  const url = `${GLPI_BASE_URL}/TicketFollowup`;
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "App-Token": GLPI_APP_TOKEN,
+      "Session-Token": sessionToken,
+    },
+    body: JSON.stringify({
+      input: {
+        tickets_id,
+        content: contentHtml,
+        is_private: 0,
+      },
+    }),
+  });
+
+  const raw = await resp.json().catch(async () => await resp.text());
+  if (!resp.ok) {
+    throw new Error(
+      `Falha ao criar followup no GLPI (${resp.status}): ${JSON.stringify(raw)}`
+    );
+  }
+
+  const id =
+    typeof raw === "object" && raw && "id" in raw
+      ? Number((raw as any).id)
+      : undefined;
+  return { id, raw };
+}
