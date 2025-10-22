@@ -357,8 +357,8 @@ export default function InfoFormularioPage() {
         body: [[{ stack: Array.isArray(conteudo) ? conteudo : [conteudo] }]],
       },
       layout: {
-        hLineWidth: () => 1,
-        vLineWidth: () => 1,
+        hLineWidth: () => 0,
+        vLineWidth: () => 0,
         hLineColor: () => "#d1d5db",
         vLineColor: () => "#d1d5db",
         paddingLeft: () => 8,
@@ -373,10 +373,10 @@ export default function InfoFormularioPage() {
       text: "LAUDO TÉCNICO",
       style: "header",
       alignment: "center",
-      margin: [0, 0, 0, 10], // sem moldura, igual ao admin
+      margin: [0, 0, 0, 3], // sem moldura, igual ao admin
     };
 
-    // Banner de emissão (apenas layout do admin, sem “REIMPRESSÃO”)
+    // Removido: const emissaoBanner = {
     const emissaoBanner = {
       table: {
         widths: ["*"],
@@ -493,7 +493,7 @@ export default function InfoFormularioPage() {
 
     const content: unknown[] = [
       titulo,
-      moldura(emissaoBanner),
+      // Removido: moldura(emissaoBanner)
       moldura(infoTable),
       { text: "TESTES REALIZADOS", style: "subheader", margin: [0, 10, 0, 4] },
       { text: testesRealizados || "-", margin: [4, 0, 0, 8] },
@@ -541,6 +541,40 @@ export default function InfoFormularioPage() {
     };
 
     pdfMake.createPdf(docDefinition).open();
+
+    // Limpa todos os campos do formulário após imprimir
+    const resetFormulario = () => {
+      setNumeroChamado("");
+      setEquipamento("");
+      setEquipamentoId(null);
+      setModelo("");
+      setModelos([]);
+      setLoja("");
+      setSetor("");
+      setTombo("");
+      setEstadoEquipamento("");
+      setNecessidade("");
+      setTestesRealizados("");
+      setDiagnostico("");
+
+      // Imagem e assinatura
+      setImageFile(null);
+      setImagePreviewUrl("");
+      setAssinaturaDataUrl("");
+      if (sigPadRef.current) sigPadRef.current.clear();
+
+      // Atualiza a data para o momento atual
+      const d = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      setDataAtual(
+        `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(
+          d.getHours()
+        )}:${pad(d.getMinutes())}`
+      );
+    };
+
+    // Após abrir o PDF, limpa o conteúdo do formulário
+    resetFormulario();
   };
 
   // Handler para seleção de equipamento (novo)
@@ -747,7 +781,7 @@ export default function InfoFormularioPage() {
             >
               <option value="">Selecione...</option>
               <option value="substituido">Ser substituído</option>
-              <option value="enviar_conserto">Enviado p/ concêrto</option>
+              <option value="enviar_conserto">Enviado p/ conserto</option>
               <option value="descartado">Ser descartado</option>
             </select>
           </div>
