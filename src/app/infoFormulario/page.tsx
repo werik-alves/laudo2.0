@@ -17,6 +17,9 @@ import { Button } from "@/components/ui/button";
 import SignatureCanvas from "react-signature-canvas";
 import { LojaType } from "@/types/domain";
 import GlpiPasswordModal from "@/components/glpi-password-modal";
+import GlpiRelateModal, {
+  GlpiRelacaoPayload,
+} from "@/components/glpi-relate-modal";
 // Tipos explícitos para evitar "any"
 type EstadoEquipamento = "funcionando" | "nao_funcionando" | "";
 type Necessidade = "substituido" | "enviar_conserto" | "descartado" | "";
@@ -248,6 +251,83 @@ export default function InfoFormularioPage() {
   }
 
   const [isGlpiModalOpen, setIsGlpiModalOpen] = useState(false);
+  const [glpiPassword, setGlpiPassword] = useState("");
+  const [isRelateDecisionOpen, setIsRelateDecisionOpen] = useState(false);
+  const [isRelateFormOpen, setIsRelateFormOpen] = useState(false);
+  const [glpiRelacaoForm, setGlpiRelacaoForm] =
+    useState<GlpiRelacaoPayload | null>(null);
+
+  const openGlpiDecision = () => setIsRelateDecisionOpen(true);
+  const chooseRelateYes = () => {
+    setIsRelateDecisionOpen(false);
+    setIsRelateFormOpen(true);
+  };
+  const chooseRelateNo = () => {
+    setIsRelateDecisionOpen(false);
+    setGlpiRelacaoForm(null);
+    setIsGlpiModalOpen(true);
+  };
+
+  const confirmRelacaoAndSend = (data: GlpiRelacaoPayload) => {
+    setIsRelateFormOpen(false);
+    setGlpiRelacaoForm(data);
+    setIsGlpiModalOpen(true);
+  };
+
+  async function registrarRelacaoNoGLPI(
+    pwd: string,
+    relacao: GlpiRelacaoPayload
+  ) {
+    const baseUrl = API_BASE_URL || "http://localhost:4000";
+    const laudoPayload = {
+      equipamento:
+        equipamento ||
+        equipamentos.find((eq) => eq.id === equipamentoId)?.nome ||
+        "",
+      modelo,
+      tombo,
+      setor,
+      loja,
+      testesRealizados,
+      diagnostico,
+      estadoEquipamento,
+      necessidade,
+    };
+    const resp = await fetch(`${baseUrl}/glpi/relacionar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        numeroChamado: numeroChamado,
+        glpiPassword: pwd,
+        laudo: laudoPayload,
+        relacao: {
+          titulo: relacao.titulo,
+          localizacao: relacao.localizacao,
+          tecnicoAtribuido: relacao.tecnicoAtribuido,
+          grupo: relacao.grupo,
+          categoria: relacao.categoria,
+          requerente: relacao.requerente,
+        },
+      }),
+    });
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => "");
+      alert(`Falha ao relacionar no GLPI: ${resp.status} ${errText}`);
+      return;
+    }
+    alert("Assentamento relacionado ao chamado no GLPI.");
+  }
+
+  const confirmGlpiPassword = async (pwd: string) => {
+    setIsGlpiModalOpen(false);
+    if (glpiRelacaoForm) {
+      await registrarRelacaoNoGLPI(pwd, glpiRelacaoForm);
+      setGlpiRelacaoForm(null);
+    } else {
+      await registrarFollowupNoGLPI(pwd);
+    }
+  };
 
   // Enviar acompanhamento ao GLPI (recebe a senha do modal)
   async function registrarFollowupNoGLPI(glpiPwd: string) {
@@ -837,15 +917,61 @@ export default function InfoFormularioPage() {
           Imprimir
         </Button>
 
-        <Button type="button" onClick={openGlpiModal}>
+        <Button variant="default" onClick={openGlpiDecision}>
           Enviar para o GLPI
         </Button>
 
+        {/* Modal de decisão: relacionar? */}
+        {isRelateDecisionOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white rounded-md p-4 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-2">
+                Deseja relacionar a um chamado existente?
+              </h3>
+              <p className="text-sm mb-4">
+                Se preferir não relacionar, enviaremos o acompanhamento no
+                chamado informado normalmente.
+              </p>
+              <div className="flex gap-2">
+                <Button onClick={chooseRelateYes}>Sim, relacionar</Button>
+                <Button variant="outline" onClick={chooseRelateNo}>
+                  Não, enviar acompanhamento
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsRelateDecisionOpen(false)}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal com campos de relação */}
+        <GlpiRelateModal
+          open={isRelateFormOpen}
+          defaultTecnico={
+            fullName ||
+            (typeof window !== "undefined"
+              ? localStorage.getItem("username") || ""
+              : "")
+          }
+          defaultRequerente={
+            fullName ||
+            (typeof window !== "undefined"
+              ? localStorage.getItem("username") || ""
+              : "")
+          }
+          onCancel={() => setIsRelateFormOpen(false)}
+          onConfirm={confirmRelacaoAndSend}
+        />
+
+        {/* Modal de senha GLPI (já existente) */}
         <GlpiPasswordModal
           open={isGlpiModalOpen}
-          onCancel={closeGlpiModal}
-          onConfirm={confirmGlpiAndSend}
-          // opcional: title="Enviar para GLPI" description="Informe sua senha GLPI/AD para registrar o acompanhamento no ticket."
+          onCancel={() => setIsGlpiModalOpen(false)}
+          onConfirm={confirmGlpiPassword}
         />
 
         <Button

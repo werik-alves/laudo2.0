@@ -120,3 +120,68 @@ export async function createTicketFollowup(
       : undefined;
   return { id, raw };
 }
+
+export async function createTicketFollowupWithHeader(
+  username: string,
+  password: string,
+  tickets_id: number,
+  info: LaudoInfoForGlpi,
+  relacao?: RelacaoHeader
+): Promise<{ id?: number; raw: any }> {
+  const sessionToken = await initSession(username, password);
+
+  const headerHtml = relacao
+    ? `<h3>Relacionamento com chamado existente</h3>` +
+      `<p>` +
+      `<br>Título: ${escapeHtml(relacao.titulo)}` +
+      `<br><br>Localização: ${escapeHtml(relacao.localizacao)}` +
+      `<br><br>Técnico atribuído: ${escapeHtml(relacao.tecnicoAtribuido)}` +
+      `<br><br>Grupo: ${escapeHtml(relacao.grupo)}` +
+      `<br><br>Categoria: ${escapeHtml(relacao.categoria)}` +
+      `<br><br>Requerente: ${escapeHtml(relacao.requerente)}` +
+      `</p>`
+    : "";
+
+  const contentHtml = headerHtml + buildFollowupHtml(info);
+  const url = `${GLPI_BASE_URL}/TicketFollowup`;
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "App-Token": GLPI_APP_TOKEN,
+      "Session-Token": sessionToken,
+    },
+    body: JSON.stringify({
+      input: {
+        tickets_id,
+        content: contentHtml,
+        is_private: 0,
+      },
+    }),
+  });
+
+  const raw = await resp.json().catch(async () => await resp.text());
+  if (!resp.ok) {
+    throw new Error(
+      `Falha ao criar followup com relação (${resp.status}): ${JSON.stringify(
+        raw
+      )}`
+    );
+  }
+
+  const id =
+    typeof raw === "object" && raw && "id" in raw
+      ? Number((raw as any).id)
+      : undefined;
+  return { id, raw };
+}
+
+export type RelacaoHeader = {
+  titulo?: string;
+  localizacao?: string;
+  tecnicoAtribuido?: string;
+  grupo?: string;
+  categoria?: string;
+  requerente?: string;
+};
