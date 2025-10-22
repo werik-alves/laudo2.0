@@ -256,22 +256,42 @@ export default function InfoFormularioPage() {
   const [isRelateFormOpen, setIsRelateFormOpen] = useState(false);
   const [glpiRelacaoForm, setGlpiRelacaoForm] =
     useState<GlpiRelacaoPayload | null>(null);
+  const [pendingRelateAfterAuth, setPendingRelateAfterAuth] = useState(false);
 
   const openGlpiDecision = () => setIsRelateDecisionOpen(true);
   const chooseRelateYes = () => {
+    // Primeiro pede senha, depois abre o modal de relacionamento
     setIsRelateDecisionOpen(false);
-    setIsRelateFormOpen(true);
+    setPendingRelateAfterAuth(true);
+    setIsGlpiModalOpen(true);
   };
   const chooseRelateNo = () => {
     setIsRelateDecisionOpen(false);
     setGlpiRelacaoForm(null);
+    setPendingRelateAfterAuth(false);
     setIsGlpiModalOpen(true);
   };
 
-  const confirmRelacaoAndSend = (data: GlpiRelacaoPayload) => {
+  const confirmRelacaoAndSend = async (data: GlpiRelacaoPayload) => {
     setIsRelateFormOpen(false);
-    setGlpiRelacaoForm(data);
-    setIsGlpiModalOpen(true);
+    // Usa a senha já informada antes do modal
+    await registrarRelacaoNoGLPI(glpiPassword, data);
+    setGlpiRelacaoForm(null);
+  };
+
+  const confirmGlpiPassword = async (pwd: string) => {
+    setIsGlpiModalOpen(false);
+    setGlpiPassword(pwd);
+
+    // Se for fluxo de relacionamento, abre modal após obter a senha
+    if (pendingRelateAfterAuth) {
+      setIsRelateFormOpen(true);
+      setPendingRelateAfterAuth(false);
+      return;
+    }
+
+    // Caso contrário, envia acompanhamento normalmente
+    await registrarFollowupNoGLPI(pwd);
   };
 
   async function registrarRelacaoNoGLPI(
@@ -318,16 +338,6 @@ export default function InfoFormularioPage() {
     }
     alert("Assentamento relacionado ao chamado no GLPI.");
   }
-
-  const confirmGlpiPassword = async (pwd: string) => {
-    setIsGlpiModalOpen(false);
-    if (glpiRelacaoForm) {
-      await registrarRelacaoNoGLPI(pwd, glpiRelacaoForm);
-      setGlpiRelacaoForm(null);
-    } else {
-      await registrarFollowupNoGLPI(pwd);
-    }
-  };
 
   // Enviar acompanhamento ao GLPI (recebe a senha do modal)
   async function registrarFollowupNoGLPI(glpiPwd: string) {
@@ -951,6 +961,7 @@ export default function InfoFormularioPage() {
         {/* Modal com campos de relação */}
         <GlpiRelateModal
           open={isRelateFormOpen}
+          apiBaseUrl={API_BASE_URL || "http://localhost:4000"}
           defaultTecnico={
             fullName ||
             (typeof window !== "undefined"
@@ -972,6 +983,8 @@ export default function InfoFormularioPage() {
           open={isGlpiModalOpen}
           onCancel={() => setIsGlpiModalOpen(false)}
           onConfirm={confirmGlpiPassword}
+          title="Autenticar (senha GLPI/AD)"
+          description="Informe sua senha para enviar ao GLPI e continuar."
         />
 
         <Button

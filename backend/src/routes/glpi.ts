@@ -95,4 +95,17 @@ router.post("/relacionar", requireAuth, async (req, res) => {
       .json({ error: err?.message || "Erro interno ao integrar com GLPI" });
   }
 });
+// Nova rota: listar categorias diretamente do DB do GLPI
+router.get("/lookup/categories-db", requireAuth, async (_req, res) => {
+  try {
+    const { listItilCategories } = await import("../services/glpiDb");
+    const categorias = await listItilCategories();
+    return res.status(200).json(categorias);
+  } catch (err: any) {
+    console.error("Erro ao listar categorias GLPI via DB:", err);
+    return res
+      .status(500)
+      .json({ error: err?.message || "Erro interno ao consultar DB GLPI" });
+  }
+});
 export default router;

@@ -58,13 +58,17 @@ function buildFollowupHtml(info: LaudoInfoForGlpi): string {
 
 async function initSession(login: string, password: string): Promise<string> {
   const url = `${GLPI_BASE_URL}/initSession`;
+  const basic = Buffer.from(`${login}:${password}`).toString("base64");
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Basic ${basic}`,
+  };
+  if (GLPI_APP_TOKEN) headers["App-Token"] = GLPI_APP_TOKEN;
+
   const resp = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "App-Token": GLPI_APP_TOKEN,
-    },
-    body: JSON.stringify({ login, password }),
+    method: "GET",
+    headers,
   });
 
   if (!resp.ok) {

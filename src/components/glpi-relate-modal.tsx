@@ -8,17 +8,20 @@ export type GlpiRelacaoPayload = {
   tecnicoAtribuido: string;
   grupo: string;
   categoria: string;
+  categoriaId?: number | null;
   requerente: string;
 };
 
 export default function GlpiRelateModal({
   open,
+  apiBaseUrl,
   defaultTecnico,
   defaultRequerente,
   onCancel,
   onConfirm,
 }: {
   open: boolean;
+  apiBaseUrl: string;
   defaultTecnico: string;
   defaultRequerente: string;
   onCancel: () => void;
@@ -31,7 +34,11 @@ export default function GlpiRelateModal({
   );
   const [grupo, setGrupo] = useState("");
   const [categoria, setCategoria] = useState("");
+  const [categoriaId, setCategoriaId] = useState<number | null>(null);
   const [requerente, setRequerente] = useState(defaultRequerente || "");
+
+  type GlpiCategory = { id: number; completename: string };
+  const [categoriasLista, setCategoriasLista] = useState<GlpiCategory[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -40,7 +47,34 @@ export default function GlpiRelateModal({
     }
   }, [open, defaultTecnico, defaultRequerente]);
 
+  useEffect(() => {
+    if (!open) return;
+    // Busca categorias via backend (consulta direta ao DB do GLPI)
+    fetch(`${apiBaseUrl}/glpi/lookup/categories-db`, {
+      method: "GET",
+      credentials: "include",
+    })
+      .then(async (resp) => {
+        if (!resp.ok) {
+          const txt = await resp.text().catch(() => "");
+          throw new Error(`Falha ao listar categorias: ${resp.status} ${txt}`);
+        }
+        const data = await resp.json();
+        setCategoriasLista(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error("Erro ao obter categorias GLPI via DB:", err);
+      });
+  }, [open, apiBaseUrl]);
+
   if (!open) return null;
+
+  const handleCategoriaChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = Number(e.target.value);
+    setCategoriaId(isNaN(id) ? null : id);
+    const item = categoriasLista.find((c) => c.id === id);
+    setCategoria(item?.completename || "");
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -73,10 +107,18 @@ export default function GlpiRelateModal({
           </div>
           <div className="grid gap-2">
             <label>Categoria</label>
-            <Input
-              value={categoria}
-              onChange={(e) => setCategoria(e.target.value)}
-            />
+            <select
+              className="border rounded px-2 py-1"
+              value={categoriaId ?? ""}
+              onChange={handleCategoriaChange}
+            >
+              <option value="">Selecione uma categoria</option>
+              {categoriasLista.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.completename}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="grid gap-2">
             <label>Requerente</label>
@@ -99,6 +141,7 @@ export default function GlpiRelateModal({
                 tecnicoAtribuido,
                 grupo,
                 categoria,
+                categoriaId: categoriaId ?? null,
                 requerente,
               })
             }
