@@ -185,7 +185,8 @@ export async function createTicket(
   username: string,
   password: string,
   info: LaudoInfoForGlpi,
-  relacao?: RelacaoHeader & {
+  relacao?: {
+    titulo?: string;
     categoriaId?: number | null;
     localizacaoId?: number | null;
     grupoId?: number | null;
@@ -193,22 +194,18 @@ export async function createTicket(
 ): Promise<{ id?: number; raw: any }> {
   const sessionToken = await initSession(username, password);
 
-  const headerHtml = relacao
-    ? `<h3>Dados de relacionamento</h3>` +
-      `<p>` +
-      `<br>Título: ${escapeHtml(relacao.titulo)}` +
-      `<br><br>Localização: ${escapeHtml(relacao.localizacao)}` +
-      `<br><br>Técnico atribuído: ${escapeHtml(relacao.tecnicoAtribuido)}` +
-      `<br><br>Grupo: ${escapeHtml(relacao.grupo)}` +
-      `<br><br>Categoria: ${escapeHtml(relacao.categoria)}` +
-      `<br><br>Requerente: ${escapeHtml(relacao.requerente)}` +
-      `</p>`
-    : "";
-
-  const contentHtml = headerHtml + buildFollowupHtml(info);
+  const contentHtml = buildFollowupHtml(info);
+  const defaultName =
+    `Laudo Técnico - ` +
+    (info.equipamento ||
+      info.modelo ||
+      info.tombo ||
+      info.setor ||
+      info.loja ||
+      "Sem título");
 
   const inputPayload: Record<string, any> = {
-    name: escapeHtml(relacao?.titulo || "Chamado via API"),
+    name: escapeHtml(relacao?.titulo || defaultName),
     content: contentHtml,
     type: 1,
     priority: 3,
@@ -244,6 +241,35 @@ export async function createTicket(
       ? Number((raw as any).id)
       : undefined;
   return { id, raw };
+}
+
+export async function linkTickets(
+  username: string,
+  password: string,
+  tickets_id_1: number,
+  tickets_id_2: number,
+  link: number = 1
+): Promise<any> {
+  const sessionToken = await initSession(username, password);
+  const url = `${GLPI_BASE_URL}/Ticket_Ticket`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "App-Token": GLPI_APP_TOKEN,
+      "Session-Token": sessionToken,
+    },
+    body: JSON.stringify({
+      input: { tickets_id_1, tickets_id_2, link },
+    }),
+  });
+  const raw = await resp.json().catch(async () => await resp.text());
+  if (!resp.ok) {
+    throw new Error(
+      `Falha ao relacionar Tickets (${resp.status}): ${JSON.stringify(raw)}`
+    );
+  }
+  return raw;
 }
 
 export type RelacaoHeader = {

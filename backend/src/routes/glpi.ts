@@ -142,15 +142,9 @@ router.post("/ticket/create", requireAuth, async (req, res) => {
   try {
     const user = (req as any).user as { username: string };
     const glpiPassword = (req.body?.glpiPassword ?? "").toString();
-
     const laudo = (req.body?.laudo ?? {}) as LaudoInfoForGlpi;
     const relacao = (req.body?.relacao ?? {}) as {
       titulo?: string;
-      localizacao?: string;
-      tecnicoAtribuido?: string;
-      grupo?: string;
-      categoria?: string;
-      requerente?: string;
       categoriaId?: number | null;
       localizacaoId?: number | null;
       grupoId?: number | null;
@@ -171,16 +165,48 @@ router.post("/ticket/create", requireAuth, async (req, res) => {
       relacao
     );
 
-    return res.status(200).json({
-      success: true,
-      ticketId: result.id,
-      raw: result.raw,
-    });
+    return res
+      .status(200)
+      .json({ success: true, ticketId: result.id, raw: result.raw });
   } catch (err: any) {
     console.error("Erro GLPI criar ticket:", err);
     return res
       .status(500)
       .json({ error: err?.message || "Erro interno ao criar Ticket no GLPI" });
+  }
+});
+router.post("/ticket/link", requireAuth, async (req, res) => {
+  try {
+    const user = (req as any).user as { username: string };
+    const glpiPassword = (req.body?.glpiPassword ?? "").toString();
+    const t1 = Number(req.body?.tickets_id_1);
+    const t2 = Number(req.body?.tickets_id_2);
+    const linkType = Number(req.body?.link ?? 1);
+
+    if (!glpiPassword) {
+      return res.status(400).json({ error: "glpiPassword é obrigatório" });
+    }
+    if (!user?.username) {
+      return res.status(401).json({ error: "Usuário não autenticado" });
+    }
+    if (!t1 || Number.isNaN(t1) || !t2 || Number.isNaN(t2)) {
+      return res.status(400).json({ error: "IDs de tickets inválidos" });
+    }
+
+    const { linkTickets } = await import("../services/glpi");
+    const raw = await linkTickets(
+      user.username,
+      glpiPassword,
+      t1,
+      t2,
+      linkType
+    );
+    return res.status(200).json({ success: true, raw });
+  } catch (err: any) {
+    console.error("Erro GLPI relacionar tickets:", err);
+    return res
+      .status(500)
+      .json({ error: err?.message || "Erro interno ao relacionar Tickets" });
   }
 });
 export default router;

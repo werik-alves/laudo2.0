@@ -276,7 +276,7 @@ export default function InfoFormularioPage() {
 
   const confirmRelacaoAndSend = async (data: GlpiRelacaoPayload) => {
     setIsRelateFormOpen(false);
-    await criarChamadoNoGLPI(glpiPassword, data);
+    await criarChamadoERelacionar(glpiPassword, data);
     setGlpiRelacaoForm(null);
   };
 
@@ -295,7 +295,10 @@ export default function InfoFormularioPage() {
     await registrarFollowupNoGLPI(pwd);
   };
 
-  async function criarChamadoNoGLPI(pwd: string, relacao: GlpiRelacaoPayload) {
+  async function criarChamadoERelacionar(
+    pwd: string,
+    relacao: GlpiRelacaoPayload
+  ) {
     const baseUrl = API_BASE_URL || "http://localhost:4000";
     const laudoPayload = {
       equipamento:
@@ -311,7 +314,8 @@ export default function InfoFormularioPage() {
       estadoEquipamento,
       necessidade,
     };
-    const resp = await fetch(`${baseUrl}/glpi/ticket/create`, {
+
+    const createResp = await fetch(`${baseUrl}/glpi/ticket/create`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -319,32 +323,58 @@ export default function InfoFormularioPage() {
         glpiPassword: pwd,
         laudo: laudoPayload,
         relacao: {
-          titulo: relacao.titulo, // vai em "name"
-          localizacao: relacao.localizacao,
-          tecnicoAtribuido: relacao.tecnicoAtribuido,
-          grupo: relacao.grupo,
-          categoria: relacao.categoria,
-          requerente: relacao.requerente,
-          categoriaId: relacao.categoriaId ?? null, // itilcategories_id
-          localizacaoId: relacao.localizacaoId ?? null, // locations_id
-          grupoId: relacao.grupoId ?? null, // groups_id_assign
+          titulo: relacao.titulo,
+          categoriaId: relacao.categoriaId ?? null,
+          localizacaoId: relacao.localizacaoId ?? null,
+          grupoId: relacao.grupoId ?? null,
         },
       }),
     });
-
-    if (!resp.ok) {
-      const errText = await resp.text().catch(() => "");
-      alert(`Falha ao criar Chamado no GLPI: ${resp.status} ${errText}`);
+    if (!createResp.ok) {
+      const txt = await createResp.text().catch(() => "");
+      alert(`Falha ao criar Ticket: ${createResp.status} ${txt}`);
       return;
     }
-    const json = await resp.json();
-    const createdId = Number(json?.ticketId);
+    const createJson = await createResp.json();
+    const createdId = Number(createJson?.ticketId);
     if (createdId && !Number.isNaN(createdId)) {
       setGlpiTicketId(createdId);
-      alert(`Chamado criado no GLPI: #${createdId}`);
-    } else {
-      alert("Chamado criado, mas não foi possível obter o ID.");
     }
+
+    const targetId = Number(numeroChamado);
+    if (
+      !createdId ||
+      Number.isNaN(createdId) ||
+      !targetId ||
+      Number.isNaN(targetId)
+    ) {
+      alert(
+        createdId
+          ? `Chamado criado: #${createdId}. Número do chamado alvo inválido para relacionar.`
+          : "Chamado criado, mas ID não obtido."
+      );
+      return;
+    }
+
+    const linkResp = await fetch(`${baseUrl}/glpi/ticket/link`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        glpiPassword: pwd,
+        tickets_id_1: createdId,
+        tickets_id_2: targetId,
+        link: 1,
+      }),
+    });
+    if (!linkResp.ok) {
+      const txt = await linkResp.text().catch(() => "");
+      alert(
+        `Chamado criado #${createdId}, mas falhou ao relacionar com #${targetId}: ${linkResp.status} ${txt}`
+      );
+      return;
+    }
+    alert(`Chamado criado #${createdId} e relacionado com #${targetId}.`);
   }
 
   // Enviar acompanhamento ao GLPI (recebe a senha do modal)
