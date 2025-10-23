@@ -72,7 +72,8 @@ export default function InfoFormularioPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const isDrawingRef = useRef<boolean>(false);
   const lastPosRef = useRef<{ x: number; y: number } | null>(null);
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const API_BASE_URL =
+    process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
 
   // Remova a definição inline de LojaType; use o import acima
   const [lojas, setLojas] = useState<LojaType[]>([]);
@@ -961,7 +962,7 @@ export default function InfoFormularioPage() {
         {/* Modal com campos de relação */}
         <GlpiRelateModal
           open={isRelateFormOpen}
-          apiBaseUrl={API_BASE_URL || "http://localhost:4000"}
+          apiBaseUrl={API_BASE_URL}
           defaultTecnico={
             fullName ||
             (typeof window !== "undefined"

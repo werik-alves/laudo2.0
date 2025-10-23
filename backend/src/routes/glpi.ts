@@ -108,4 +108,18 @@ router.get("/lookup/categories-db", requireAuth, async (_req, res) => {
       .json({ error: err?.message || "Erro interno ao consultar DB GLPI" });
   }
 });
+
+// Nova rota: listar localizações diretamente do DB do GLPI
+router.get("/lookup/locations-db", requireAuth, async (_req, res) => {
+  try {
+    const { listLocations } = await import("../services/glpiDb");
+    const locais = await listLocations();
+    return res.status(200).json(locais);
+  } catch (err: any) {
+    console.error("Erro ao listar localizações GLPI via DB:", err);
+    return res
+      .status(500)
+      .json({ error: err?.message || "Erro interno ao consultar DB GLPI" });
+  }
+});
 export default router;
