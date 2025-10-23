@@ -30,6 +30,7 @@ type SetorType = { id: number; nome: string };
 
 export default function InfoFormularioPage() {
   const router = useRouter();
+  const [glpiTicketId, setGlpiTicketId] = useState<number | null>(null);
 
   const [numeroChamado, setNumeroChamado] = useState("");
   const [nomeTecnico, setNomeTecnico] = useState("");
@@ -275,8 +276,7 @@ export default function InfoFormularioPage() {
 
   const confirmRelacaoAndSend = async (data: GlpiRelacaoPayload) => {
     setIsRelateFormOpen(false);
-    // Usa a senha já informada antes do modal
-    await registrarRelacaoNoGLPI(glpiPassword, data);
+    await criarChamadoNoGLPI(glpiPassword, data);
     setGlpiRelacaoForm(null);
   };
 
@@ -295,10 +295,7 @@ export default function InfoFormularioPage() {
     await registrarFollowupNoGLPI(pwd);
   };
 
-  async function registrarRelacaoNoGLPI(
-    pwd: string,
-    relacao: GlpiRelacaoPayload
-  ) {
+  async function criarChamadoNoGLPI(pwd: string, relacao: GlpiRelacaoPayload) {
     const baseUrl = API_BASE_URL || "http://localhost:4000";
     const laudoPayload = {
       equipamento:
@@ -314,30 +311,40 @@ export default function InfoFormularioPage() {
       estadoEquipamento,
       necessidade,
     };
-    const resp = await fetch(`${baseUrl}/glpi/relacionar`, {
+    const resp = await fetch(`${baseUrl}/glpi/ticket/create`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({
-        numeroChamado: numeroChamado,
         glpiPassword: pwd,
         laudo: laudoPayload,
         relacao: {
-          titulo: relacao.titulo,
+          titulo: relacao.titulo, // vai em "name"
           localizacao: relacao.localizacao,
           tecnicoAtribuido: relacao.tecnicoAtribuido,
           grupo: relacao.grupo,
           categoria: relacao.categoria,
           requerente: relacao.requerente,
+          categoriaId: relacao.categoriaId ?? null, // itilcategories_id
+          localizacaoId: relacao.localizacaoId ?? null, // locations_id
+          grupoId: relacao.grupoId ?? null, // groups_id_assign
         },
       }),
     });
+
     if (!resp.ok) {
       const errText = await resp.text().catch(() => "");
-      alert(`Falha ao relacionar no GLPI: ${resp.status} ${errText}`);
+      alert(`Falha ao criar Chamado no GLPI: ${resp.status} ${errText}`);
       return;
     }
-    alert("Assentamento relacionado ao chamado no GLPI.");
+    const json = await resp.json();
+    const createdId = Number(json?.ticketId);
+    if (createdId && !Number.isNaN(createdId)) {
+      setGlpiTicketId(createdId);
+      alert(`Chamado criado no GLPI: #${createdId}`);
+    } else {
+      alert("Chamado criado, mas não foi possível obter o ID.");
+    }
   }
 
   // Enviar acompanhamento ao GLPI (recebe a senha do modal)
@@ -688,6 +695,11 @@ export default function InfoFormularioPage() {
       <CardHeader>
         <CardTitle>Informações do Laudo Técnico</CardTitle>
         <CardDescription>Preencha os dados</CardDescription>
+        {glpiTicketId && (
+          <div className="mt-2 text-sm">
+            Chamado GLPI criado: <strong>#{glpiTicketId}</strong>
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="grid gap-4">

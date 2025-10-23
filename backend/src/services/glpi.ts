@@ -181,6 +181,71 @@ export async function createTicketFollowupWithHeader(
   return { id, raw };
 }
 
+export async function createTicket(
+  username: string,
+  password: string,
+  info: LaudoInfoForGlpi,
+  relacao?: RelacaoHeader & {
+    categoriaId?: number | null;
+    localizacaoId?: number | null;
+    grupoId?: number | null;
+  }
+): Promise<{ id?: number; raw: any }> {
+  const sessionToken = await initSession(username, password);
+
+  const headerHtml = relacao
+    ? `<h3>Dados de relacionamento</h3>` +
+      `<p>` +
+      `<br>Título: ${escapeHtml(relacao.titulo)}` +
+      `<br><br>Localização: ${escapeHtml(relacao.localizacao)}` +
+      `<br><br>Técnico atribuído: ${escapeHtml(relacao.tecnicoAtribuido)}` +
+      `<br><br>Grupo: ${escapeHtml(relacao.grupo)}` +
+      `<br><br>Categoria: ${escapeHtml(relacao.categoria)}` +
+      `<br><br>Requerente: ${escapeHtml(relacao.requerente)}` +
+      `</p>`
+    : "";
+
+  const contentHtml = headerHtml + buildFollowupHtml(info);
+
+  const inputPayload: Record<string, any> = {
+    name: escapeHtml(relacao?.titulo || "Chamado via API"),
+    content: contentHtml,
+    type: 1,
+    priority: 3,
+    status: 1,
+  };
+
+  if (relacao?.categoriaId)
+    inputPayload["itilcategories_id"] = relacao.categoriaId;
+  if (relacao?.localizacaoId)
+    inputPayload["locations_id"] = relacao.localizacaoId;
+  if (relacao?.grupoId) inputPayload["groups_id_assign"] = relacao.grupoId;
+
+  const url = `${GLPI_BASE_URL}/Ticket`;
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "App-Token": GLPI_APP_TOKEN,
+      "Session-Token": sessionToken,
+    },
+    body: JSON.stringify({ input: inputPayload }),
+  });
+
+  const raw = await resp.json().catch(async () => await resp.text());
+  if (!resp.ok) {
+    throw new Error(
+      `Falha ao criar Ticket no GLPI (${resp.status}): ${JSON.stringify(raw)}`
+    );
+  }
+
+  const id =
+    typeof raw === "object" && raw && "id" in raw
+      ? Number((raw as any).id)
+      : undefined;
+  return { id, raw };
+}
+
 export type RelacaoHeader = {
   titulo?: string;
   localizacao?: string;

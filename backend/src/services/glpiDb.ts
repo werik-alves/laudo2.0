@@ -74,3 +74,23 @@ export async function listLocations(): Promise<
     throw err;
   }
 }
+export async function listGroups(): Promise<
+  Array<{ id: number; name: string }>
+> {
+  try {
+    console.log("[GLPI DB] Testando conexão...");
+    const conn = await pool.getConnection();
+    conn.release();
+
+    const [rows] = await pool.query(
+      "SELECT id, completename FROM glpi_groups ORDER BY completename ASC"
+    );
+    return rows as Array<{ id: number; name: string }>;
+  } catch (err: any) {
+    console.error("[GLPI DB] Erro na consulta:", {
+      code: err?.code,
+      message: err?.message,
+    });
+    throw err;
+  }
+}

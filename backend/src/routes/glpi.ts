@@ -122,4 +122,65 @@ router.get("/lookup/locations-db", requireAuth, async (_req, res) => {
       .json({ error: err?.message || "Erro interno ao consultar DB GLPI" });
   }
 });
+
+// Nova rota: listar grupos diretamente do DB do GLPI
+router.get("/lookup/groups-db", requireAuth, async (_req, res) => {
+  try {
+    const { listGroups } = await import("../services/glpiDb");
+    const grupos = await listGroups();
+    return res.status(200).json(grupos);
+  } catch (err: any) {
+    console.error("Erro ao listar grupos GLPI via DB:", err);
+    return res
+      .status(500)
+      .json({ error: err?.message || "Erro interno ao consultar DB GLPI" });
+  }
+});
+
+// Criar Ticket no GLPI com dados do modal de relação
+router.post("/ticket/create", requireAuth, async (req, res) => {
+  try {
+    const user = (req as any).user as { username: string };
+    const glpiPassword = (req.body?.glpiPassword ?? "").toString();
+
+    const laudo = (req.body?.laudo ?? {}) as LaudoInfoForGlpi;
+    const relacao = (req.body?.relacao ?? {}) as {
+      titulo?: string;
+      localizacao?: string;
+      tecnicoAtribuido?: string;
+      grupo?: string;
+      categoria?: string;
+      requerente?: string;
+      categoriaId?: number | null;
+      localizacaoId?: number | null;
+      grupoId?: number | null;
+    };
+
+    if (!glpiPassword) {
+      return res.status(400).json({ error: "glpiPassword é obrigatório" });
+    }
+    if (!user?.username) {
+      return res.status(401).json({ error: "Usuário não autenticado" });
+    }
+
+    const { createTicket } = await import("../services/glpi");
+    const result = await createTicket(
+      user.username,
+      glpiPassword,
+      laudo,
+      relacao
+    );
+
+    return res.status(200).json({
+      success: true,
+      ticketId: result.id,
+      raw: result.raw,
+    });
+  } catch (err: any) {
+    console.error("Erro GLPI criar ticket:", err);
+    return res
+      .status(500)
+      .json({ error: err?.message || "Erro interno ao criar Ticket no GLPI" });
+  }
+});
 export default router;
