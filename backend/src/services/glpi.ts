@@ -280,3 +280,77 @@ export type RelacaoHeader = {
   categoria?: string;
   requerente?: string;
 };
+
+// Define o requerente no ticket recém-criado (type=1)
+export async function setTicketRequester(
+  username: string,
+  password: string,
+  tickets_id: number,
+  users_id: number,
+  type: number = 1
+): Promise<any> {
+  const sessionToken = await initSession(username, password);
+  const url = `${GLPI_BASE_URL}/Ticket_User`;
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "App-Token": GLPI_APP_TOKEN,
+      "Session-Token": sessionToken,
+    },
+    body: JSON.stringify({
+      input: {
+        tickets_id,
+        users_id,
+        type,
+      },
+    }),
+  });
+
+  const raw = await resp.json().catch(async () => await resp.text());
+  if (!resp.ok) {
+    throw new Error(
+      `Falha ao definir requerente (${resp.status}): ${JSON.stringify(raw)}`
+    );
+  }
+  return raw;
+}
+
+// Adicionar: atribuição (type=2) ao chamado
+export async function setTicketAssigned(
+  username: string,
+  password: string,
+  tickets_id: number,
+  users_id: number,
+  type: number = 2
+): Promise<any> {
+  const sessionToken = await initSession(username, password);
+  const url = `${GLPI_BASE_URL}/Ticket_User`;
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "App-Token": GLPI_APP_TOKEN,
+      "Session-Token": sessionToken,
+    },
+    body: JSON.stringify({
+      input: {
+        tickets_id,
+        users_id,
+        type, // 2 = atribuído
+      },
+    }),
+  });
+
+  const raw = await resp.json().catch(async () => await resp.text());
+  if (!resp.ok) {
+    throw new Error(
+      `Falha ao atribuir usuário ao Ticket (${resp.status}): ${JSON.stringify(
+        raw
+      )}`
+    );
+  }
+  return raw;
+}

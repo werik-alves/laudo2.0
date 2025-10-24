@@ -94,3 +94,23 @@ export async function listGroups(): Promise<
     throw err;
   }
 }
+
+// Busca o usuário do GLPI pelo login (campo 'name' em glpi_users)
+export async function findGlpiUserByLogin(
+  login: string
+): Promise<{ id: number; name: string } | null> {
+  try {
+    const [rows] = await pool.query(
+      "SELECT id, name FROM glpi_users WHERE name = ? LIMIT 1",
+      [login]
+    );
+    const arr = rows as Array<{ id: number; name: string }>;
+    return arr?.[0] ?? null;
+  } catch (err: any) {
+    console.error("[GLPI DB] Erro ao buscar usuário:", {
+      code: err?.code,
+      message: err?.message,
+    });
+    throw err;
+  }
+}

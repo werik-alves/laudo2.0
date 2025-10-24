@@ -157,17 +157,51 @@ router.post("/ticket/create", requireAuth, async (req, res) => {
       return res.status(401).json({ error: "Usuário não autenticado" });
     }
 
-    const { createTicket } = await import("../services/glpi");
+    const { createTicket, setTicketRequester } = await import(
+      "../services/glpi"
+    );
+    const { findGlpiUserByLogin } = await import("../services/glpiDb");
+
+    // 1) Cria o ticket com base no laudo (sem cabeçalho extra)
     const result = await createTicket(
       user.username,
       glpiPassword,
       laudo,
       relacao
     );
+    const ticketId = result.id;
 
-    return res
-      .status(200)
-      .json({ success: true, ticketId: result.id, raw: result.raw });
+    // 2) Obtém o users_id do criador (via glpi_users.name = login)
+    let requesterSet: boolean | undefined = undefined;
+    let requesterUserId: number | undefined = undefined;
+
+    if (ticketId) {
+      const userRow = await findGlpiUserByLogin(user.username).catch(
+        () => null
+      );
+      if (userRow?.id) {
+        requesterUserId = userRow.id;
+        // 3) Define o requerente do ticket
+        await setTicketRequester(
+          user.username,
+          glpiPassword,
+          ticketId,
+          requesterUserId,
+          1
+        );
+        requesterSet = true;
+      } else {
+        requesterSet = false;
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      ticketId,
+      requesterSet,
+      requesterUserId,
+      raw: result.raw,
+    });
   } catch (err: any) {
     console.error("Erro GLPI criar ticket:", err);
     return res
@@ -207,6 +241,54 @@ router.post("/ticket/link", requireAuth, async (req, res) => {
     return res
       .status(500)
       .json({ error: err?.message || "Erro interno ao relacionar Tickets" });
+  }
+});
+// Nova rota: atribuir usuário ao ticket (type=2)
+router.post("/ticket/assign", requireAuth, async (req, res) => {
+  try {
+    const user = (req as any).user as { username: string };
+    const glpiPassword = (req.body?.glpiPassword ?? "").toString();
+    const tickets_id = Number(req.body?.tickets_id);
+
+    if (!glpiPassword) {
+      return res.status(400).json({ error: "glpiPassword é obrigatório" });
+    }
+    if (!user?.username) {
+      return res.status(401).json({ error: "Usuário não autenticado" });
+    }
+    if (!tickets_id || Number.isNaN(tickets_id)) {
+      return res.status(400).json({ error: "tickets_id inválido" });
+    }
+
+    const { setTicketAssigned } = await import("../services/glpi");
+    const { findGlpiUserByLogin } = await import("../services/glpiDb");
+
+    const userRow = await findGlpiUserByLogin(user.username).catch(() => null);
+    if (!userRow?.id) {
+      return res
+        .status(404)
+        .json({ error: "Usuário não encontrado em glpi_users" });
+    }
+
+    const raw = await setTicketAssigned(
+      user.username,
+      glpiPassword,
+      tickets_id,
+      userRow.id,
+      2
+    );
+
+    return res.status(200).json({
+      success: true,
+      tickets_id,
+      users_id: userRow.id,
+      raw,
+    });
+  } catch (err: any) {
+    console.error("Erro GLPI atribuir usuário:", err);
+    return res
+      .status(500)
+      .json({ error: err?.message || "Erro interno ao atribuir usuário" });
   }
 });
 export default router;

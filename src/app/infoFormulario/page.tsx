@@ -260,12 +260,15 @@ export default function InfoFormularioPage() {
     useState<GlpiRelacaoPayload | null>(null);
   const [pendingRelateAfterAuth, setPendingRelateAfterAuth] = useState(false);
 
+  // Nova pergunta após "Sim, relacionar"
+  const [isRelateFollowupAskOpen, setIsRelateFollowupAskOpen] = useState(false);
+  const [doFollowupOnOriginal, setDoFollowupOnOriginal] = useState(false);
+
   const openGlpiDecision = () => setIsRelateDecisionOpen(true);
   const chooseRelateYes = () => {
-    // Primeiro pede senha, depois abre o modal de relacionamento
+    // Ao clicar "Sim, relacionar", perguntar se quer acompanhar o chamado original
     setIsRelateDecisionOpen(false);
-    setPendingRelateAfterAuth(true);
-    setIsGlpiModalOpen(true);
+    setIsRelateFollowupAskOpen(true);
   };
   const chooseRelateNo = () => {
     setIsRelateDecisionOpen(false);
@@ -274,9 +277,28 @@ export default function InfoFormularioPage() {
     setIsGlpiModalOpen(true);
   };
 
+  // Handlers da nova pergunta
+  const chooseRelateFollowupYes = () => {
+    setDoFollowupOnOriginal(true);
+    setIsRelateFollowupAskOpen(false);
+    setPendingRelateAfterAuth(true);
+    setIsGlpiModalOpen(true);
+  };
+  const chooseRelateFollowupNo = () => {
+    setDoFollowupOnOriginal(false);
+    setIsRelateFollowupAskOpen(false);
+    setPendingRelateAfterAuth(true);
+    setIsGlpiModalOpen(true);
+  };
+
   const confirmRelacaoAndSend = async (data: GlpiRelacaoPayload) => {
     setIsRelateFormOpen(false);
     await criarChamadoERelacionar(glpiPassword, data);
+    if (doFollowupOnOriginal) {
+      // Após relacionar, faz acompanhamento no chamado original e atribui
+      await registrarFollowupNoGLPI(glpiPassword);
+      setDoFollowupOnOriginal(false);
+    }
     setGlpiRelacaoForm(null);
   };
 
@@ -414,6 +436,26 @@ export default function InfoFormularioPage() {
       } else {
         const json = await resp.json();
         console.log("Followup GLPI criado:", json);
+      }
+
+      // Atribuir ao chamado (type=2) após enviar acompanhamento
+      const assignResp = await fetch(`${baseUrl}/glpi/ticket/assign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          glpiPassword: glpiPwd,
+          tickets_id: Number(numeroChamado),
+        }),
+      });
+      if (!assignResp.ok) {
+        const txt = await assignResp.text().catch(() => "");
+        console.warn(
+          `Falha ao atribuir ao chamado ${numeroChamado}: ${assignResp.status} ${txt}`
+        );
+      } else {
+        const assignJson = await assignResp.json();
+        console.log("Atribuição registrada:", assignJson);
       }
     } catch (err) {
       console.error("Erro ao integrar GLPI:", err);
@@ -993,6 +1035,35 @@ export default function InfoFormularioPage() {
                 <Button
                   variant="ghost"
                   onClick={() => setIsRelateDecisionOpen(false)}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Nova pergunta: fazer acompanhamento no chamado original? */}
+        {isRelateFollowupAskOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white rounded-md p-4 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-2">
+                Deseja fazer o acompanhamento no chamado original?
+              </h3>
+              <p className="text-sm mb-4">
+                Se escolher sim, após relacionar criaremos um acompanhamento no
+                chamado indicado e o atribuiremos a você.
+              </p>
+              <div className="flex gap-2">
+                <Button onClick={chooseRelateFollowupYes}>
+                  Sim, fazer acompanhamento
+                </Button>
+                <Button variant="outline" onClick={chooseRelateFollowupNo}>
+                  Não, apenas relacionar
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setIsRelateFollowupAskOpen(false)}
                 >
                   Cancelar
                 </Button>
