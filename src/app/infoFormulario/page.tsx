@@ -456,6 +456,7 @@ export default function InfoFormularioPage() {
       } else {
         const assignJson = await assignResp.json();
         console.log("Atribuição registrada:", assignJson);
+        alert("Chamado foi assentado.");
       }
     } catch (err) {
       console.error("Erro ao integrar GLPI:", err);

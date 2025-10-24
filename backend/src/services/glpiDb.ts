@@ -19,7 +19,8 @@ if (useSsl) {
 }
 
 // Log leve sem credenciais
-console.log("[GLPI DB] Pool config:", { host, port, database, useSsl });
+// console.log("[GLPI DB] Pool config:", { host, port, database, useSsl });
+console.log("[GLPI DB] Pool inicializado.");
 
 const pool = mysql.createPool({
   host,
@@ -30,7 +31,7 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  connectTimeout: 10000, // 10s para evitar queda imediata
+  connectTimeout: 10000,
   ssl,
 });
 
