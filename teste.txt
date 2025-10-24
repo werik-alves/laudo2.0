@@ -699,7 +699,7 @@ export default function InfoFormularioPage() {
             try {
               await fetch(`${baseUrl}/auth/logout`, {
                 method: "POST",
-                credentials: "include",
+                
               });
             } catch {}
             localStorage.removeItem("token");

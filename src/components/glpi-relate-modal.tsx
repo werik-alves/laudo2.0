@@ -76,7 +76,6 @@ export default function GlpiRelateModal({
     if (!open) return;
     fetch(`${apiBaseUrl}/glpi/lookup/categories-db`, {
       method: "GET",
-      credentials: "include",
     })
       .then(async (resp) => {
         if (!resp.ok)
@@ -103,7 +102,6 @@ export default function GlpiRelateModal({
     if (!open) return;
     fetch(`${apiBaseUrl}/glpi/lookup/locations-db`, {
       method: "GET",
-      credentials: "include",
     })
       .then(async (resp) => {
         if (!resp.ok)
@@ -130,7 +128,6 @@ export default function GlpiRelateModal({
     if (!open) return;
     fetch(`${apiBaseUrl}/glpi/lookup/groups-db`, {
       method: "GET",
-      credentials: "include",
     })
       .then(async (resp) => {
         if (!resp.ok) throw new Error(`Falha ao listar grupos: ${resp.status}`);

@@ -67,9 +67,8 @@ export default function AdminLaudosGeradosPage() {
       const res = await fetch(`${API_BASE_URL}/info-laudos/${id}`, {
         method: "DELETE",
         headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(token ? { Authorization: token } : {}),
         },
-        credentials: "include",
       });
       if (res.status === 204 || res.status === 200) {
         setLaudos((prev) => prev.filter((x) => x.id !== id));
@@ -99,10 +98,10 @@ export default function AdminLaudosGeradosPage() {
       const res = await fetch(url.toString(), {
         method: "GET",
         headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(token ? { Authorization: token } : {}),
         },
-        credentials: "include",
       });
+      console.log(res);
       if (!res.ok) {
         setLaudos([]);
         return;
@@ -149,9 +148,8 @@ export default function AdminLaudosGeradosPage() {
           const res = await fetch(`${API_BASE_URL}/info-laudos/${id}`, {
             method: "DELETE",
             headers: {
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              ...(token ? { Authorization: token } : {}),
             },
-            credentials: "include",
           });
           if (!res.ok && res.status !== 204) {
             console.error(`Falha ao excluir laudo ${id}:`, res.status);
@@ -191,6 +189,7 @@ export default function AdminLaudosGeradosPage() {
     const pdfFontsMod = await import("pdfmake/build/vfs_fonts");
     const pdfMake = pdfMakeMod.default || pdfMakeMod;
     const pdfFonts = pdfFontsMod.default || pdfFontsMod;
+    // @ts-ignore
     pdfMake.vfs = pdfFonts.pdfMake?.vfs || pdfFonts.vfs;
 
     const estadoLabel =

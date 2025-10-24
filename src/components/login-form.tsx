@@ -38,8 +38,8 @@ export function LoginForm() {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body,
-        credentials: "include",
       });
+      console.log(resp);
 
       const data = await resp.json();
       if (!resp.ok) {
@@ -52,11 +52,13 @@ export function LoginForm() {
       if (data?.token) localStorage.setItem("token", data.token);
 
       if (goAdmin && data?.isAdmin === true) {
+        console.log(data?.isAdmin);
         router.push("/admin");
       } else {
         if (goAdmin && data?.isAdmin !== true) {
           setErrorMsg("Seu perfil não tem acesso ao painel administrador.");
         }
+        console.log(data?.isAdmin);
         router.push("/infoFormulario");
       }
     } catch (err) {

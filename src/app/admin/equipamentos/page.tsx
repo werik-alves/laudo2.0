@@ -121,7 +121,7 @@ export default function AdminEquipamentosPage() {
                   >
                     Editar
                   </Button>
-                  <Button variant="destructive" onClick={() => excluir(eq.id)}>
+                  <Button variant="default" onClick={() => excluir(eq.id)}>
                     Excluir
                   </Button>
                 </>

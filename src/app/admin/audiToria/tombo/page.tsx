@@ -37,7 +37,6 @@ export default function AdminAuditoriaTomboPage() {
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        credentials: "include",
       });
       if (!res.ok) {
         setGroups([]);

@@ -82,7 +82,12 @@ export default function InfoFormularioPage() {
   useEffect(() => {
     // valida sessão no backend ao entrar na página
     const baseUrl = API_BASE_URL || "http://localhost:4000";
-    fetch(`${baseUrl}/auth/me`, { credentials: "include" })
+    const token = localStorage.getItem("token");
+    fetch(`${baseUrl}/auth/me`, {
+      headers: {
+        Authorization: token || "",
+      },
+    })
       .then(async (resp) => {
         if (!resp.ok) {
           router.replace("/");
@@ -244,7 +249,7 @@ export default function InfoFormularioPage() {
       await fetch(`${baseUrl}/info-laudos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
+
         body: JSON.stringify(payload),
       });
     } catch (err) {
@@ -340,7 +345,7 @@ export default function InfoFormularioPage() {
     const createResp = await fetch(`${baseUrl}/glpi/ticket/create`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
+
       body: JSON.stringify({
         glpiPassword: pwd,
         laudo: laudoPayload,
@@ -381,7 +386,7 @@ export default function InfoFormularioPage() {
     const linkResp = await fetch(`${baseUrl}/glpi/ticket/link`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
+
       body: JSON.stringify({
         glpiPassword: pwd,
         tickets_id_1: createdId,
@@ -427,7 +432,7 @@ export default function InfoFormularioPage() {
       const resp = await fetch(`${baseUrl}/glpi/followup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
+
         body: JSON.stringify(payload),
       });
       if (!resp.ok) {
@@ -442,7 +447,7 @@ export default function InfoFormularioPage() {
       const assignResp = await fetch(`${baseUrl}/glpi/ticket/assign`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
+
         body: JSON.stringify({
           glpiPassword: glpiPwd,
           tickets_id: Number(numeroChamado),
@@ -1109,7 +1114,6 @@ export default function InfoFormularioPage() {
             try {
               await fetch(`${baseUrl}/auth/logout`, {
                 method: "POST",
-                credentials: "include",
               });
             } catch {}
             localStorage.removeItem("token");

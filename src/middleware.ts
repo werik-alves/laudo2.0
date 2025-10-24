@@ -16,8 +16,7 @@ export async function middleware(req: NextRequest) {
       const API_BASE_URL =
         process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
       const res = await fetch(`${API_BASE_URL}/auth/me`, {
-        headers: { cookie: req.headers.get("cookie") ?? "" },
-        credentials: "include",
+        headers: { Authorization: token || "" },
       });
       if (!res.ok) {
         url.pathname = "/";
