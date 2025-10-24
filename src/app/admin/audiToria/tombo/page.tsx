@@ -74,6 +74,10 @@ export default function AdminAuditoriaTomboPage() {
     setErrorMsg(null);
   };
 
+  const GLPI_BASEPESQUISA_URL =
+    process.env.GLPI_BASEPESQUISA_URL ||
+    "https://suporte.cometasupermercados.com.br/front/ticket.form.php?id=";
+
   return (
     <Card>
       <CardHeader>
@@ -109,14 +113,23 @@ export default function AdminAuditoriaTomboPage() {
               <div className="font-semibold">Tombo: {g.tombo}</div>
               <div className="text-sm">Chamados atrelados:</div>
               <div className="flex flex-wrap gap-2">
-                {g.chamados.map((c) => (
-                  <span
-                    key={c}
-                    className="inline-flex items-center rounded bg-green-300 px-2 py-1 text-xs font-semibold"
-                  >
-                    {c}
-                  </span>
-                ))}
+                {g.chamados.map((c) => {
+                  const href = `${GLPI_BASEPESQUISA_URL}${encodeURIComponent(
+                    c
+                  )}`;
+                  return (
+                    <a
+                      key={c}
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center rounded bg-green-300 px-2 py-1 text-xs font-semibold hover:bg-green-400"
+                      title={`Abrir chamado ${c} no GLPI`}
+                    >
+                      {c}
+                    </a>
+                  );
+                })}
                 {g.chamados.length === 0 && (
                   <span className="text-xs text-muted-foreground">
                     Nenhum chamado relacionado.
