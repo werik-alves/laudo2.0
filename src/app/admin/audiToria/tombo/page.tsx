@@ -35,7 +35,7 @@ export default function AdminAuditoriaTomboPage() {
       const res = await fetch(url.toString(), {
         method: "GET",
         headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(token ? { Authorization: token } : {}),
         },
       });
       if (!res.ok) {

@@ -183,13 +183,13 @@ export default function AdminLaudosGeradosPage() {
       return `${dd}/${mm}/${yyyy} ${HH}:${MM}`;
     };
 
-    // @ts-ignore
+    // @ts-expect-error: pdfmake lacks type definitions in this import context
     const pdfMakeMod = await import("pdfmake/build/pdfmake");
-    // @ts-ignore
+    // @ts-expect-error: vfs_fonts module has no TypeScript types
     const pdfFontsMod = await import("pdfmake/build/vfs_fonts");
     const pdfMake = pdfMakeMod.default || pdfMakeMod;
     const pdfFonts = pdfFontsMod.default || pdfFontsMod;
-    // @ts-ignore
+    // @ts-expect-error: pdfMake.vfs assignment requires any-typed module fields
     pdfMake.vfs = pdfFonts.pdfMake?.vfs || pdfFonts.vfs;
 
     const estadoLabel =
@@ -214,7 +214,7 @@ export default function AdminLaudosGeradosPage() {
         : l.equipamento;
 
     // Helper para aplicar moldura sem alterar estrutura interna
-    const moldura = (conteudo: any, margin: number[] = [0, 0, 0, 10]) => ({
+    const moldura = (conteudo: unknown, margin: number[] = [0, 0, 0, 10]) => ({
       table: {
         widths: ["*"],
         body: [[{ stack: Array.isArray(conteudo) ? conteudo : [conteudo] }]],

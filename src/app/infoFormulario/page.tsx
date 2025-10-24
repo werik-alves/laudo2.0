@@ -527,7 +527,7 @@ export default function InfoFormularioPage() {
 
     // Helper de moldura idêntico ao admin (borda mais marcada e padding)
 
-    const moldura = (conteudo: any, margin: number[] = [0, 0, 0, 10]) => ({
+    const moldura = (conteudo: unknown, margin: number[] = [0, 0, 0, 10]) => ({
       table: {
         widths: ["*"],
         body: [[{ stack: Array.isArray(conteudo) ? conteudo : [conteudo] }]],
