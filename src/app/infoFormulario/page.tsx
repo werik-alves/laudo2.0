@@ -246,12 +246,20 @@ export default function InfoFormularioPage() {
     };
 
     try {
-      await fetch(`${baseUrl}/info-laudos`, {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
+      const resp = await fetch(`${baseUrl}/info-laudos`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: token },
 
         body: JSON.stringify(payload),
       });
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => "");
+        console.error("Falha ao salvar laudo:", resp.status, txt);
+      } else {
+        const json = await resp.json().catch(() => null);
+        console.log("Laudo salvo com sucesso:", json);
+      }
     } catch (err) {
       console.error("Falha ao salvar laudo:", err);
     }
@@ -342,15 +350,10 @@ export default function InfoFormularioPage() {
       necessidade,
     };
 
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
     const createResp = await fetch(`${baseUrl}/glpi/ticket/create`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: token } : {}),
-      },
+      headers: { "Content-Type": "application/json", Authorization: (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "") },
+
       body: JSON.stringify({
         glpiPassword: pwd,
         laudo: laudoPayload,
@@ -390,10 +393,8 @@ export default function InfoFormularioPage() {
 
     const linkResp = await fetch(`${baseUrl}/glpi/ticket/link`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: token } : {}),
-      },
+      headers: { "Content-Type": "application/json", Authorization: (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "") },
+
       body: JSON.stringify({
         glpiPassword: pwd,
         tickets_id_1: createdId,
@@ -435,16 +436,11 @@ export default function InfoFormularioPage() {
       },
     };
 
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
     try {
       const resp = await fetch(`${baseUrl}/glpi/followup`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: token } : {}),
-        },
+        headers: { "Content-Type": "application/json", Authorization: (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "") },
+
         body: JSON.stringify(payload),
       });
       if (!resp.ok) {
@@ -458,10 +454,8 @@ export default function InfoFormularioPage() {
       // Atribuir ao chamado (type=2) após enviar acompanhamento
       const assignResp = await fetch(`${baseUrl}/glpi/ticket/assign`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: token } : {}),
-        },
+        headers: { "Content-Type": "application/json", Authorization: (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "") },
+
         body: JSON.stringify({
           glpiPassword: glpiPwd,
           tickets_id: Number(numeroChamado),
