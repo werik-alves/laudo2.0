@@ -246,12 +246,20 @@ export default function InfoFormularioPage() {
     };
 
     try {
-      await fetch(`${baseUrl}/info-laudos`, {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
+      const resp = await fetch(`${baseUrl}/info-laudos`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: token },
 
         body: JSON.stringify(payload),
       });
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => "");
+        console.error("Falha ao salvar laudo:", resp.status, txt);
+      } else {
+        const json = await resp.json().catch(() => null);
+        console.log("Laudo salvo com sucesso:", json);
+      }
     } catch (err) {
       console.error("Falha ao salvar laudo:", err);
     }
