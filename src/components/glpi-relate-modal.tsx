@@ -74,8 +74,10 @@ export default function GlpiRelateModal({
   // ===== Buscar Categorias =====
   useEffect(() => {
     if (!open) return;
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
     fetch(`${apiBaseUrl}/glpi/lookup/categories-db`, {
       method: "GET",
+      headers: { Authorization: token },
     })
       .then(async (resp) => {
         if (!resp.ok)
@@ -100,8 +102,10 @@ export default function GlpiRelateModal({
   // ===== Buscar Localizações =====
   useEffect(() => {
     if (!open) return;
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
     fetch(`${apiBaseUrl}/glpi/lookup/locations-db`, {
       method: "GET",
+      headers: { Authorization: token },
     })
       .then(async (resp) => {
         if (!resp.ok)
@@ -126,8 +130,10 @@ export default function GlpiRelateModal({
   // ===== Buscar Grupos =====
   useEffect(() => {
     if (!open) return;
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
     fetch(`${apiBaseUrl}/glpi/lookup/groups-db`, {
       method: "GET",
+      headers: { Authorization: token },
     })
       .then(async (resp) => {
         if (!resp.ok) throw new Error(`Falha ao listar grupos: ${resp.status}`);

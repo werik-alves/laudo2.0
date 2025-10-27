@@ -48,17 +48,30 @@ export function LoginForm() {
         return;
       }
 
+      // Persistir dados localmente
       if (data?.fullName) localStorage.setItem("fullName", data.fullName);
       if (data?.token) localStorage.setItem("token", data.token);
+      if (data?.username) localStorage.setItem("username", data.username);
 
-      if (goAdmin && data?.isAdmin === true) {
-        console.log(data?.isAdmin);
-        router.push("/admin");
-      } else {
-        if (goAdmin && data?.isAdmin !== true) {
-          setErrorMsg("Seu perfil não tem acesso ao painel administrador.");
+      // Garantir compatibilidade com o middleware: definir cookie auth_token
+      if (data?.token) {
+        try {
+          const maxAgeSeconds = 7 * 24 * 60 * 60; // 7 dias
+          document.cookie = `auth_token=${data.token}; Path=/; SameSite=Lax; Max-Age=${maxAgeSeconds}`;
+        } catch (cookieErr) {
+          console.warn("Falha ao definir cookie auth_token", cookieErr);
         }
-        console.log(data?.isAdmin);
+      }
+
+      // Fluxo de navegação
+      if (goAdmin) {
+        if (data?.isAdmin === true) {
+          router.push("/admin");
+        } else {
+          setErrorMsg("Seu perfil não tem acesso ao painel administrador.");
+          router.push("/infoFormulario");
+        }
+      } else {
         router.push("/infoFormulario");
       }
     } catch (err) {

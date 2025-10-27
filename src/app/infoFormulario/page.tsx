@@ -344,7 +344,7 @@ export default function InfoFormularioPage() {
 
     const createResp = await fetch(`${baseUrl}/glpi/ticket/create`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "") },
 
       body: JSON.stringify({
         glpiPassword: pwd,
@@ -385,7 +385,7 @@ export default function InfoFormularioPage() {
 
     const linkResp = await fetch(`${baseUrl}/glpi/ticket/link`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "") },
 
       body: JSON.stringify({
         glpiPassword: pwd,
@@ -431,7 +431,7 @@ export default function InfoFormularioPage() {
     try {
       const resp = await fetch(`${baseUrl}/glpi/followup`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "") },
 
         body: JSON.stringify(payload),
       });
@@ -446,7 +446,7 @@ export default function InfoFormularioPage() {
       // Atribuir ao chamado (type=2) após enviar acompanhamento
       const assignResp = await fetch(`${baseUrl}/glpi/ticket/assign`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "") },
 
         body: JSON.stringify({
           glpiPassword: glpiPwd,
