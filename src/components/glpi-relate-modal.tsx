@@ -77,6 +77,7 @@ export default function GlpiRelateModal({
     const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
     fetch(`${apiBaseUrl}/glpi/lookup/categories-db`, {
       method: "GET",
+      cache: "no-store",
       headers: { Authorization: token },
     })
       .then(async (resp) => {
@@ -105,6 +106,7 @@ export default function GlpiRelateModal({
     const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
     fetch(`${apiBaseUrl}/glpi/lookup/locations-db`, {
       method: "GET",
+      cache: "no-store",
       headers: { Authorization: token },
     })
       .then(async (resp) => {
@@ -133,6 +135,7 @@ export default function GlpiRelateModal({
     const token = typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
     fetch(`${apiBaseUrl}/glpi/lookup/groups-db`, {
       method: "GET",
+      cache: "no-store",
       headers: { Authorization: token },
     })
       .then(async (resp) => {

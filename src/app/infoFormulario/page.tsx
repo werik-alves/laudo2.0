@@ -352,6 +352,7 @@ export default function InfoFormularioPage() {
 
     const createResp = await fetch(`${baseUrl}/glpi/ticket/create`, {
       method: "POST",
+      cache: "no-store",
       headers: { "Content-Type": "application/json", Authorization: (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "") },
 
       body: JSON.stringify({
@@ -393,6 +394,7 @@ export default function InfoFormularioPage() {
 
     const linkResp = await fetch(`${baseUrl}/glpi/ticket/link`, {
       method: "POST",
+      cache: "no-store",
       headers: { "Content-Type": "application/json", Authorization: (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "") },
 
       body: JSON.stringify({
@@ -439,6 +441,7 @@ export default function InfoFormularioPage() {
     try {
       const resp = await fetch(`${baseUrl}/glpi/followup`, {
         method: "POST",
+        cache: "no-store",
         headers: { "Content-Type": "application/json", Authorization: (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "") },
 
         body: JSON.stringify(payload),
@@ -454,6 +457,7 @@ export default function InfoFormularioPage() {
       // Atribuir ao chamado (type=2) após enviar acompanhamento
       const assignResp = await fetch(`${baseUrl}/glpi/ticket/assign`, {
         method: "POST",
+        cache: "no-store",
         headers: { "Content-Type": "application/json", Authorization: (typeof window !== "undefined" ? localStorage.getItem("token") || "" : "") },
 
         body: JSON.stringify({
@@ -1122,10 +1126,26 @@ export default function InfoFormularioPage() {
             try {
               await fetch(`${baseUrl}/auth/logout`, {
                 method: "POST",
+                cache: "no-store",
               });
             } catch {}
-            localStorage.removeItem("token");
-            localStorage.removeItem("fullName");
+            try {
+              localStorage.removeItem("token");
+              localStorage.removeItem("fullName");
+              localStorage.removeItem("username");
+              sessionStorage.clear();
+
+              if (typeof window !== "undefined" && "caches" in window) {
+                caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
+              }
+
+              const cookies = document.cookie.split("; ");
+              for (const c of cookies) {
+                const eqPos = c.indexOf("=");
+                const name = eqPos > -1 ? c.substring(0, eqPos) : c;
+                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+              }
+            } catch {}
             router.replace("/");
           }}
         >

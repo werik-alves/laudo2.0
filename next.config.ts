@@ -5,9 +5,6 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   distDir: "build",
-  experimental: {
-    outputFileTracing: false,
-  },
 };
 
 export default nextConfig;

@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { clearBrowserCachesAndCookies } from "@/lib/browser-cleanup";
 
 export default function AdminLayout({
   children,
@@ -11,6 +12,7 @@ export default function AdminLayout({
 }) {
   const [displayName, setDisplayName] = React.useState("Usuário");
   const [isAuditoriaOpen, setIsAuditoriaOpen] = React.useState(true);
+  const [showNotice, setShowNotice] = React.useState(false);
 
   React.useEffect(() => {
     if (typeof window !== "undefined") {
@@ -22,6 +24,13 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen flex">
+      {showNotice && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[1000]">
+          <div className="rounded-md bg-green-600 text-white px-4 py-2 shadow">
+            Aplicação atualizada - cache limpo
+          </div>
+        </div>
+      )}
       <aside className="w-64 bg-gray-50 border-r flex flex-col">
         <div className="p-4 border-b">
           <p className="text-sm font-medium">Bem-vindo, {displayName}</p>
@@ -87,6 +96,21 @@ export default function AdminLayout({
                 </Link>
               </div>
             )}
+          </div>
+
+          {/* Utilitário: Limpar cache/cookies */}
+          <div className="mt-4 p-2 border-t">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                clearBrowserCachesAndCookies();
+                setShowNotice(true);
+                const t = setTimeout(() => setShowNotice(false), 4000);
+              }}
+            >
+              Limpar cache
+            </Button>
           </div>
         </nav>
       </aside>
