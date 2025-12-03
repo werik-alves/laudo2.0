@@ -24,6 +24,9 @@ export default function AdminHomePage() {
         <Link href="/admin/setores">
           <Button>Gerenciar Setores</Button>
         </Link>
+        <Link href="/admin/glpi-monitor">
+          <Button>Monitoramento GLPI</Button>
+        </Link>
       </CardContent>
     </Card>
   );

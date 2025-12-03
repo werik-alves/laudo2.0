@@ -71,6 +71,11 @@ export default function AdminLayout({
               Laudos Gerados
             </Button>
           </Link>
+          <Link href="/admin/glpi-monitor">
+            <Button variant="ghost" className="justify-start w-full">
+              Monitoramento GLPI
+            </Button>
+          </Link>
           <Link href="/infoFormulario">
             <Button variant="ghost" className="justify-start w-full">
               Laudo Técnico
@@ -98,18 +103,29 @@ export default function AdminLayout({
             )}
           </div>
 
-          {/* Utilitário: Limpar cache/cookies */}
+          {/* Sair */}
           <div className="mt-4 p-2 border-t">
             <Button
-              variant="outline"
+              variant="default"
               className="w-full"
-              onClick={() => {
-                clearBrowserCachesAndCookies();
-                setShowNotice(true);
-                const t = setTimeout(() => setShowNotice(false), 4000);
+              onClick={async () => {
+                try {
+                  const API_BASE_URL =
+                    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+                  await fetch(`${API_BASE_URL}/auth/logout`, {
+                    method: "POST",
+                    cache: "no-store",
+                  });
+                } catch {}
+                try {
+                  clearBrowserCachesAndCookies();
+                } catch {}
+                if (typeof window !== "undefined") {
+                  window.location.replace("/");
+                }
               }}
             >
-              Limpar cache
+              Sair
             </Button>
           </div>
         </nav>
